@@ -44,6 +44,10 @@ class Group(object):
             member._removeGroup(self)
         self.members = []
 
+    def receiveMessage(self, message):
+        for member in self.members:
+            member.receiveMessage(message)
+
 def Message(object):
     def __init__(self, toUser, fromUser, message):
         self.toUser = toUser
@@ -65,27 +69,57 @@ class Server262(object):
         if name in self.users:
             raise APIError("User Exists")
         newUser = User(name)
-        self.users.append(newUser)
+        self.users[name] = newUser
         return newUser
 
     def listAccounts(self):
         return self.users.keys()
 
-    def createGroup():
-        pass
+    def createGroup(self, name, memberNames):
+        if name in self.groups:
+            return APIError("Group Exists")
 
-    def listGroups():
+        members = [self.users.get(memberName, None) for memberName in memberNames]
+        if None in members:
+            raise APIError("Member does not exist")
+
+        newGroup = Group(name, memberNames)
+        self.groups[name] = newGroup
+        return newGroup
+
+    def listGroups(self):
         return self.groups.keys()
 
-    def sendMessage(toname, isgroup, fromname, message):
-        
+    def sendGroupMessage(self, toname, fromname, message):
+        toGroup = self.groups.get(toname, None)
+        if toUser is None:
+            raise APIError("Missing To Group")
 
-    def fetchMessages(username):
+        fromUser = self.users.get(fromname, None)
+        if fromUser is None:
+            raise APIError("Missing From User")
+
+        newMessage = Message(toGroup, fromUser, message)
+        toGroup.receiveMessage(newMessage)
+
+    def sendUserMessage(self, toname, fromname, message):
+        toUser = self.users.get(toname, None)
+        if toUser is None:
+            raise APIError("Missing To User")
+
+        fromUser = self.users.get(fromname, None)
+        if fromUser is None:
+            raise APIError("Missing From User")
+
+        newMessage = Message(toUser, fromUser, message)
+        fromUser.receiveMessage(newMessage)
+
+    def fetchMessages(self, username):
         if name not in self.users:
             raise APIError("Missing User")
         return self.users.get(username).receiveMessage()
 
-    def deleteAccount(username):
+    def deleteAccount(self, username):
         user = self.users.pop(username, None)
 
         if user is None:
