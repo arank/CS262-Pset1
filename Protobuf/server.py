@@ -24,11 +24,11 @@ class APIError(Exception):
 #
 
 @app.get("/users")
-def listUsers(self):
+def listUsers():
     return USERS.keys()
 
-@app.post("/users")
-def createUser(self, name):
+@app.post("/users/:username")
+def createUser(username):
     if name in USERS:
         raise APIError("User Exists")
     newUser = User(name)
@@ -36,7 +36,7 @@ def createUser(self, name):
     return newUser
 
 @app.delete("/users/:username")
-def deleteUser(self):
+def deleteUser(username):
     user = USERS.pop(username, None)
 
     if user is None:
@@ -49,41 +49,33 @@ def deleteUser(self):
 #
 
 @app.get("/groups")
-def listGroups(self):
+def listGroups():
     return GROUPS.keys()
 
-@app.post("/groups")
-def createGroup(self, name, memberNames):
-    if name in GROUPS:
+@app.post("/groups/:groupname")
+def createGroup(groupname):
+    if groupname in GROUPS:
         return APIError("Group Exists")
 
     members = [USERS.get(memberName, None) for memberName in memberNames]
     if None in members:
         raise APIError("Member does not exist")
 
-    newGroup = Group(name, memberNames)
-    GROUPS[name] = newGroup
+    newGroup = Group(groupname, memberNames)
+    GROUPS[groupname] = newGroup
     return newGroup
+
+@app.put("/groups/:groupname/users/:username")
+def addUserToGroup(groupname, username):
+    # TODO
+    pass
 
 #
 # Messages
 #
 
-@app.post("/groups/:groupname/messages")
-def sendGroupMessage(self, toname, fromname, message):
-    toGroup = GROUPS.get(toname, None)
-    if toUser is None:
-        raise APIError("Missing To Group")
-
-    fromUser = USERS.get(fromname, None)
-    if fromUser is None:
-        raise APIError("Missing From User")
-
-    newMessage = Message(toGroup, fromUser, message)
-    toGroup.receiveMessage(newMessage)
-
 @app.post("/users/:username/messages")
-def sendUserMessage(self, toname, fromname, message):
+def sendDirectMessage(username):
     toUser = USERS.get(toname, None)
     if toUser is None:
         raise APIError("Missing To User")
@@ -95,8 +87,21 @@ def sendUserMessage(self, toname, fromname, message):
     newMessage = Message(toUser, fromUser, message)
     fromUser.receiveMessage(newMessage)
 
+@app.post("/groups/:groupname/messages")
+def sendGroupMessage(groupname):
+    toGroup = GROUPS.get(toname, None)
+    if toUser is None:
+        raise APIError("Missing To Group")
+
+    fromUser = USERS.get(fromname, None)
+    if fromUser is None:
+        raise APIError("Missing From User")
+
+    newMessage = Message(toGroup, fromUser, message)
+    toGroup.receiveMessage(newMessage)
+
 @app.get("/users/:username/messages")
-def listMessages(self, username):
+def listMessages(username):
     if name not in USERS:
         raise APIError("Missing User")
     return USERS.get(username).receiveMessage()
