@@ -45,7 +45,7 @@ public class Server262 implements Protocol262 {
     @Override
     public Set<String> listAccounts(String filter) {
         // TODO filtering?
-        return users.keySet();
+        return new HashSet<>(users.keySet());
     }
     
     @Override
@@ -70,7 +70,7 @@ public class Server262 implements Protocol262 {
     @Override
     public Set<String> listGroups(String filter) {
         // TODO filtering?
-        return groups.keySet();
+        return new HashSet<>(groups.keySet());
     }
     
     @Override
