@@ -13,12 +13,12 @@ message Message {
 }
 
 message Group {
-  required string name = 1;
+  required string groupname = 1;
   repeated User users = 2;
 }
 
 message User {
-  required string name = 1;
+  required string username = 1;
   repeated Group groups = 2;
   repeated Message undeliveredMessages = 3;
 }

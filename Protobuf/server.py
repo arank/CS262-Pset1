@@ -24,7 +24,7 @@ class APIError(Exception):
 #
 
 @app.get("/users")
-def listAccounts(self):
+def listUsers(self):
     return USERS.keys()
 
 @app.post("/users")
@@ -35,8 +35,8 @@ def createUser(self, name):
     USERS[name] = newUser
     return newUser
 
-@app.delete("/users/:name")
-def deleteAccount(self, username):
+@app.delete("/users/:username")
+def deleteUser(self):
     user = USERS.pop(username, None)
 
     if user is None:
@@ -69,7 +69,7 @@ def createGroup(self, name, memberNames):
 # Messages
 #
 
-@app.post("/groupMessages")
+@app.post("/groups/:groupname/messages")
 def sendGroupMessage(self, toname, fromname, message):
     toGroup = GROUPS.get(toname, None)
     if toUser is None:
@@ -82,7 +82,7 @@ def sendGroupMessage(self, toname, fromname, message):
     newMessage = Message(toGroup, fromUser, message)
     toGroup.receiveMessage(newMessage)
 
-@app.post("/messages")
+@app.post("/users/:username/messages")
 def sendUserMessage(self, toname, fromname, message):
     toUser = USERS.get(toname, None)
     if toUser is None:
@@ -95,8 +95,8 @@ def sendUserMessage(self, toname, fromname, message):
     newMessage = Message(toUser, fromUser, message)
     fromUser.receiveMessage(newMessage)
 
-@app.get("/users/:name/messages")
-def fetchMessages(self, username):
+@app.get("/users/:username/messages")
+def listMessages(self, username):
     if name not in USERS:
         raise APIError("Missing User")
     return USERS.get(username).receiveMessage()
