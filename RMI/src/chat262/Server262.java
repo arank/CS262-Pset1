@@ -44,8 +44,18 @@ public class Server262 implements Protocol262 {
     
     @Override
     public Set<String> listAccounts(String filter) {
-        // TODO filtering?
-        return new HashSet<>(users.keySet());
+    	HashSet<String> all_users = new HashSet<>(users.keySet());
+    	if (filter == null || filter.length() == 0) {
+    		filter = "*";
+    	}
+    	String regex = ("\\Q" + filter + "\\E").replace("*", "\\E.*\\Q");
+    	for (Iterator<String> i = all_users.iterator(); i.hasNext();) {
+    	    String element = i.next();
+	        if (!element.matches(regex)){
+	        	i.remove();
+	        }
+    	}
+        return all_users;
     }
     
     @Override
@@ -69,8 +79,18 @@ public class Server262 implements Protocol262 {
     
     @Override
     public Set<String> listGroups(String filter) {
-        // TODO filtering?
-        return new HashSet<>(groups.keySet());
+    	HashSet<String> all_groups = new HashSet<>(groups.keySet());
+    	if (filter == null || filter.length() == 0) {
+    		filter = "*";
+    	}
+        String regex = ("\\Q" + filter + "\\E").replace("*", "\\E.*\\Q");
+    	for (Iterator<String> i = all_groups.iterator(); i.hasNext();) {
+    	    String element = i.next();
+	        if (!element.matches(regex)){
+	        	i.remove();
+	        }
+    	}
+        return all_groups;
     }
     
     @Override
