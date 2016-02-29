@@ -34,7 +34,7 @@ public class Server262 implements Protocol262 {
     
     @Override
     public void createAccount(String name) throws IllegalArgumentException {
-        if (users.containsKey(name)) {
+        if (users.containsKey(name) || groups.containsKey(name)) {
             throw new IllegalArgumentException("Username already exist");
         }
         
@@ -60,7 +60,7 @@ public class Server262 implements Protocol262 {
     
     @Override
     public void createGroup(String name, Set<String> members) throws IllegalArgumentException {
-        if (groups.containsKey(name)) {
+        if (users.containsKey(name) || groups.containsKey(name)) {
             throw new IllegalArgumentException("Group already exist");
         }
         
