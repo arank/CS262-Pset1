@@ -1,32 +1,43 @@
 import cmd
+import requests
 
-class ChatClient(cmd.Cmd):
-    def do_createUser(self, username):
+SERVER_HOST = '127.0.0.1'
 
+def do_createUser(self, username):
+    r = requests.get(SERVER_HOST + '/users/' + username)
+    print r
 
-    def do_listAccounts(self):
+def published(method):
+    method.published = True
+    return method
 
+class Client(object):
+    def __init__(self):
+        self.current_user = None
+        self.current_room = None
 
-    def do_createGroup(self, groupname, membersStr):
+    @published
+    def adduser(self, uname):
+        pass
 
+    def send(self):
+        pass
 
-    def do_listGroups(self):
+if __name__ == "__main__":
+    client = Client()
 
+    while True:
+        prompt = "[" + str(current_user) + "," + str(current_room) + "]: "
+        command = raw_input(prompt)
 
-    def do_sendGroupMessage(self, fromUser, toGroup, message):
+        # not a slash command
+        if command.get(0) != "/":
+            client.send(command)
 
-
-    def do_sendUserMessage(self, fromUser, toUser, message):
-
-
-    def do_fetchMessages(self, username):
-
-
-    def do_deleteAccount(self, username):
-
-
-    def do_EOF(self, line):
-        return True
-
-if __name__ == '__main__':
-    ChatClient().cmdloop()
+        # is a slash command
+        action = command.split(' ')
+        method = client.getattr(action[0][1:], None)
+        if method and method.published:
+            method(*action[1:])
+        else:
+            print "<Action Unknown>"

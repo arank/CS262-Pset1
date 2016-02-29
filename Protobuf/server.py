@@ -5,19 +5,12 @@
 
 from flask import Flask
 import chat
-from build import chat_pb2
+import model
 
 app = Flask(__name__)
 
 USERS = {}
 GROUPS = {}
-
-class APIError(Exception):
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
-
 
 #
 # Users
@@ -30,7 +23,7 @@ def listUsers():
 @app.post("/users/:username")
 def createUser(username):
     if name in USERS:
-        raise APIError("User Exists")
+        raise UserError("User Exists")
     newUser = User(name)
     USERS[name] = newUser
     return newUser
@@ -40,7 +33,7 @@ def deleteUser(username):
     user = USERS.pop(username, None)
 
     if user is None:
-        raise APIError("Missing User")
+        raise UserError("Missing User")
 
     user.cleanupGroups()
 
@@ -55,11 +48,11 @@ def listGroups():
 @app.post("/groups/:groupname")
 def createGroup(groupname):
     if groupname in GROUPS:
-        return APIError("Group Exists")
+        return UserError("Group Exists")
 
     members = [USERS.get(memberName, None) for memberName in memberNames]
     if None in members:
-        raise APIError("Member does not exist")
+        raise UserError("Member does not exist")
 
     newGroup = Group(groupname, memberNames)
     GROUPS[groupname] = newGroup
@@ -78,11 +71,11 @@ def addUserToGroup(groupname, username):
 def sendDirectMessage(username):
     toUser = USERS.get(toname, None)
     if toUser is None:
-        raise APIError("Missing To User")
+        raise UserError("Missing To User")
 
     fromUser = USERS.get(fromname, None)
     if fromUser is None:
-        raise APIError("Missing From User")
+        raise UserError("Missing From User")
 
     newMessage = Message(toUser, fromUser, message)
     fromUser.receiveMessage(newMessage)
@@ -91,11 +84,11 @@ def sendDirectMessage(username):
 def sendGroupMessage(groupname):
     toGroup = GROUPS.get(toname, None)
     if toUser is None:
-        raise APIError("Missing To Group")
+        raise UserError("Missing To Group")
 
     fromUser = USERS.get(fromname, None)
     if fromUser is None:
-        raise APIError("Missing From User")
+        raise UserError("Missing From User")
 
     newMessage = Message(toGroup, fromUser, message)
     toGroup.receiveMessage(newMessage)
@@ -103,7 +96,7 @@ def sendGroupMessage(groupname):
 @app.get("/users/:username/messages")
 def listMessages(username):
     if name not in USERS:
-        raise APIError("Missing User")
+        raise UserError("Missing User")
     return USERS.get(username).receiveMessage()
 
 if __name__ == "__main__":
