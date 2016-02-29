@@ -2,8 +2,8 @@
 
 We use Protocol Buffers v3. If using OS X, execute:
 
-        brew update && brew install --devel protobuf
-        pip install flask requests protobuf
+        brew update && brew install protobuf
+        pip install requests protobuf
 
 # Run
 
