@@ -1,3 +1,8 @@
+# ********************************************
+# TODO : What do we do if a user sends a message, then deletes themself?
+#        (the unreceived message has a ref to a deleted user)
+# ********************************************
+
 from flask import Flask
 import chat
 from build import chat_pb2
@@ -6,6 +11,13 @@ app = Flask(__name__)
 
 USERS = {}
 GROUPS = {}
+
+class APIError(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
 
 #
 # Users
