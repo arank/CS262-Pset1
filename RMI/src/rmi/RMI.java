@@ -203,7 +203,7 @@ class Group implements Entity {
 
 class State {
     protected HashMap<String, User> users;
-    protected HashMap<String, User> groups;
+    protected HashMap<String, Group> groups;
     
     public State() {
         users = new HashMap();
