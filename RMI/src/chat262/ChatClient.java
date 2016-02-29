@@ -65,7 +65,7 @@ public class ChatClient {
                             server.createAccount(user);
                         } catch (IllegalArgumentException e) {
                             // user already exists
-                        }
+                        }                        
                         currentUser = user;
                         break;
                     }
@@ -80,21 +80,22 @@ public class ChatClient {
                     case "/m":
                         currentRoom = command[1];
                         break;
+                        
+                    case "/get":
+                        for (Message m : server.fetchMessages(currentUser)) {
+                            String from = m.from;
+                            if (!m.to.equals(currentUser)) {
+                                from += " to " + m.to;
+                            }
+                            System.out.println(from + ": " + m.msg);
+                        }
+                        break;
                 }
             } else {
                 if (currentUser != null && currentRoom != null) {
                     server.sendMessage(currentRoom, currentUser, line);
-                    
-                    for (Message m : server.fetchMessages(currentUser)) {
-                        String from = m.from;
-                        if (!m.to.equals(currentUser)) {
-                            from += " to " + m.to;
-                        }
-                        System.out.println(from + ": " + m.msg);
-                    }
                 }
             }
-            
         }        
     }
     

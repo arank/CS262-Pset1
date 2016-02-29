@@ -1,26 +1,27 @@
 syntax = "proto2";
 
+message User {
+  required string username = 1;
+  repeated string groupnames = 2;
+  repeated Message undeliveredMessages = 3;
+}
+
+message Group {
+  required string groupname = 1;
+  repeated string usernames = 2;
+}
+
 message Message {
   enum Type {
     DIRECT = 1;
     GROUP = 2;
   }
 
-  required User from = 1;
-  optional User toUser = 2;
-  optional Group toGroup = 3;
-  required string msg = 4;
-}
-
-message Group {
-  required string groupname = 1;
-  repeated User users = 2;
-}
-
-message User {
-  required string username = 1;
-  repeated Group groups = 2;
-  repeated Message undeliveredMessages = 3;
+  required Type type = 1;
+  required User from = 2;
+  optional User toUser = 3;
+  optional Group toGroup = 4;
+  required string msg = 5;
 }
 
 message UserError {
