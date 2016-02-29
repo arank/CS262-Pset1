@@ -2,28 +2,34 @@ package chat262;
 
 import java.util.*;
 import java.util.HashSet;
-import java.rmi.*;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
-// TODO [Tomas, 2-21-2016] : IDK how RMI works, will we need sync methods?
 
-
-interface Protocol262 extends Remote {
-    public void createAccount(String name) throws IllegalArgumentException, RemoteException;
-    public Set<String> listAccounts() throws RemoteException;
-    public void createGroup(String name, Set<String> members) throws IllegalArgumentException, RemoteException;
-    public Set<String> listGroups() throws RemoteException;
-    public void sendMessage(String entityName, Boolean isGroup, String from, String message_txt) throws IllegalArgumentException, RemoteException;
-    public List<Message> fetchMessages(String name) throws IllegalArgumentException, RemoteException;
-    public void deleteAccount(String name) throws IllegalArgumentException, RemoteException;
-}
-
-class Server262 implements Protocol262 {
+public class Server262 implements Protocol262 {
     private final HashMap<String, User> users;
     private final HashMap<String, Group> groups;
     
     public Server262() {
-        users = new HashMap();
-        groups = new HashMap();
+        users = new HashMap<>();
+        groups = new HashMap<>();
+    }
+    
+    public static void main(String[] args) {
+	try {
+	    Server262 obj = new Server262();
+	    Protocol262 stub = (Protocol262) UnicastRemoteObject.exportObject(obj, 0);
+
+	    // Bind the remote object's stub in the registry
+	    Registry registry = LocateRegistry.getRegistry();
+	    registry.bind("chat262", stub);
+
+	    System.out.println("Server ready");
+	} catch (Exception e) {
+	    System.err.println("Server exception: " + e.toString());
+	    e.printStackTrace();
+	}
     }
     
     @Override
@@ -33,10 +39,12 @@ class Server262 implements Protocol262 {
         }
         
         users.put(name, new User(name));
+        System.out.println("created user " + name);
     }
     
     @Override
-    public Set<String> listAccounts() {
+    public Set<String> listAccounts(String filter) {
+        // TODO filtering?
         return users.keySet();
     }
     
@@ -60,34 +68,29 @@ class Server262 implements Protocol262 {
     }
     
     @Override
-    public Set<String> listGroups() {
+    public Set<String> listGroups(String filter) {
+        // TODO filtering?
         return groups.keySet();
     }
     
     @Override
-    public void sendMessage(String to, Boolean isGroup, String from, String message_txt) throws IllegalArgumentException {
+    public void sendMessage(String to, String from, String message_txt) throws IllegalArgumentException {
+        Message m = new Message(from, message_txt, to);
+
         User from_user = users.get(from);
         if (from_user == null) {
             throw new IllegalArgumentException("To Group does not exist");
         }
         
-        if (isGroup) {
-            Group g = groups.get(to);
-            if (g == null) {
-                throw new IllegalArgumentException("To Group does not exist");
-            }
-            
-            Message m = new Message(from_user, message_txt, g);
-            g.recieveMessage(m);
-        } else {
-            User u = users.get(to);
-            if (u == null) {
-                throw new IllegalArgumentException("To User does not exist");
-            }
-            
-            Message m = new Message(from_user, message_txt, u);
-            u.recieveMessage(m);
+        Reciever r = groups.get(to);
+        if (r == null) {
+            r = users.get(to);
         }
+        if (r == null) {
+            throw new IllegalArgumentException("Message reciever does not exist");
+        }
+            
+        r.recieveMessage(m);
     }
     
     @Override
@@ -99,7 +102,7 @@ class Server262 implements Protocol262 {
         User u = users.get(name);
         // copy it so you can clear the set
         List<Message> messages = u.getUndeliveredMessages();
-        ArrayList<Message> toReturn = new ArrayList(messages);
+        ArrayList<Message> toReturn = new ArrayList<>(messages);
         messages.clear();
         return toReturn;
     }
@@ -115,18 +118,6 @@ class Server262 implements Protocol262 {
     }
 }
 
-class Message {
-    protected User from;
-    protected String msg;
-    protected Reciever to;
-    
-    public Message(User from, String msg, Reciever to) {
-        this.from = from;
-        this.msg = msg;
-        this.to = to;
-    }
-}
-
 interface Reciever {
     String getName();
     void recieveMessage(Message m);
@@ -139,8 +130,8 @@ class User implements Reciever {
     
     public User(String name) {
         username = name;
-        groups = new HashSet();
-        undeliveredMessages = new ArrayList(); 
+        groups = new HashSet<>();
+        undeliveredMessages = new ArrayList<>(); 
     }
     
     // NOTE: DO NOT CALL, only Group should call
@@ -157,10 +148,12 @@ class User implements Reciever {
         return undeliveredMessages;
     }
     
+    @Override
     public void recieveMessage(Message m) {
         undeliveredMessages.add(m);
     }
     
+    @Override
     public String getName() {
         return username;
     }
@@ -172,7 +165,7 @@ class Group implements Reciever {
     
     public Group(String name) {
         groupname = name;
-        members = new HashSet();
+        members = new HashSet<>();
     }
     
     public void addMember(User u) {
