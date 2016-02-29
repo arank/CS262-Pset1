@@ -133,8 +133,15 @@ public class Server262 implements Protocol262 {
             throw new IllegalArgumentException("Username doesn't exist");
         }
         
-        users.remove(name);
         // TODO: remove user from all groups
+        User user_obj = users.get(name);
+        for (Group g : groups.values()) {
+            if (g.members.contains(user_obj)){
+            	g.members.remove(user_obj);
+            }
+        }
+        
+        users.remove(name);
     }
 }
 
@@ -180,8 +187,8 @@ class User implements Reciever {
 }
 
 class Group implements Reciever {
-    protected String groupname;
-    protected Set<User> members;
+    public String groupname;
+    public Set<User> members;
     
     public Group(String name) {
         groupname = name;
