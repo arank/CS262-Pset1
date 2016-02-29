@@ -1,3 +1,8 @@
+# ********************************************
+# TODO : What do we do if a user sends a message, then deletes themself?
+#        (the unreceived message has a ref to a deleted user)
+# ********************************************
+
 class User(object):
     def __init__(self, name):
         self.name = name
