@@ -1,128 +1,93 @@
-class User(object):
-    def __init__(self, name):
-        self.name = name
-        self.undeliveredMessages = []
-        self.groups = []
+from flask import Flask
+import chat
+from build import chat_pb2
 
-    def receiveMessage(self, message):
-        self.undeliveredMessages.append(message)
+app = Flask(__name__)
 
-    def getMessages(self):
-        to_return = self.undeliveredMessages
-        self.undeliveredMessages = []
-        return to_return
+USERS = {}
+GROUPS = {}
 
-    # DO NOT CALL -- only group should call this
-    def _addGroup(self, group):
-        self.groups.append(group)
+#
+# Users
+#
 
-    # DO NOT CALL -- only group should call this
-    def _removeGroup(self, group):
-        self.groups.remove(group)
+@app.get("/users")
+def listAccounts(self):
+    return USERS.keys()
 
-    def cleanupGroups(self):
-        for group in self.groups:
-            group.removeMember(self)
+@app.post("/users")
+def createUser(self, name):
+    if name in USERS:
+        raise APIError("User Exists")
+    newUser = User(name)
+    USERS[name] = newUser
+    return newUser
 
-class Group(object):
-    def __init__(self, name, members):
-        self.name = name
-        self.members = []
-        for member in members:
-            self.addMember(member)
+@app.delete("/users/:name")
+def deleteAccount(self, username):
+    user = USERS.pop(username, None)
 
-    def addMember(self, member):
-        member._addGroup(self)
-        self.members.append(member)
+    if user is None:
+        raise APIError("Missing User")
 
-    def removeMember(self, member):
-        member._removeGroup(self)
-        self.members.remove(member)
+    user.cleanupGroups()
 
-    def cleanupMembers(self):
-        for member in self.members:
-            member._removeGroup(self)
-        self.members = []
+#
+# Groups
+#
 
-    def receiveMessage(self, message):
-        for member in self.members:
-            member.receiveMessage(message)
+@app.get("/groups")
+def listGroups(self):
+    return GROUPS.keys()
 
-def Message(object):
-    def __init__(self, toUser, fromUser, message):
-        self.toUser = toUser
-        self.fromUser = fromUser
-        self.message = message
+@app.post("/groups")
+def createGroup(self, name, memberNames):
+    if name in GROUPS:
+        return APIError("Group Exists")
 
-class APIError(Exception):
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
+    members = [USERS.get(memberName, None) for memberName in memberNames]
+    if None in members:
+        raise APIError("Member does not exist")
 
-class Server262(object):
-    def __init__(self):
-        self.users = {}
-        self.groups = {}
+    newGroup = Group(name, memberNames)
+    GROUPS[name] = newGroup
+    return newGroup
 
-    def createUser(self, name):
-        if name in self.users:
-            raise APIError("User Exists")
-        newUser = User(name)
-        self.users[name] = newUser
-        return newUser
+#
+# Messages
+#
 
-    def listAccounts(self):
-        return self.users.keys()
+@app.post("/groupMessages")
+def sendGroupMessage(self, toname, fromname, message):
+    toGroup = GROUPS.get(toname, None)
+    if toUser is None:
+        raise APIError("Missing To Group")
 
-    def createGroup(self, name, memberNames):
-        if name in self.groups:
-            return APIError("Group Exists")
+    fromUser = USERS.get(fromname, None)
+    if fromUser is None:
+        raise APIError("Missing From User")
 
-        members = [self.users.get(memberName, None) for memberName in memberNames]
-        if None in members:
-            raise APIError("Member does not exist")
+    newMessage = Message(toGroup, fromUser, message)
+    toGroup.receiveMessage(newMessage)
 
-        newGroup = Group(name, memberNames)
-        self.groups[name] = newGroup
-        return newGroup
+@app.post("/messages")
+def sendUserMessage(self, toname, fromname, message):
+    toUser = USERS.get(toname, None)
+    if toUser is None:
+        raise APIError("Missing To User")
 
-    def listGroups(self):
-        return self.groups.keys()
+    fromUser = USERS.get(fromname, None)
+    if fromUser is None:
+        raise APIError("Missing From User")
 
-    def sendGroupMessage(self, toname, fromname, message):
-        toGroup = self.groups.get(toname, None)
-        if toUser is None:
-            raise APIError("Missing To Group")
+    newMessage = Message(toUser, fromUser, message)
+    fromUser.receiveMessage(newMessage)
 
-        fromUser = self.users.get(fromname, None)
-        if fromUser is None:
-            raise APIError("Missing From User")
+@app.get("/users/:name/messages")
+def fetchMessages(self, username):
+    if name not in USERS:
+        raise APIError("Missing User")
+    return USERS.get(username).receiveMessage()
 
-        newMessage = Message(toGroup, fromUser, message)
-        toGroup.receiveMessage(newMessage)
-
-    def sendUserMessage(self, toname, fromname, message):
-        toUser = self.users.get(toname, None)
-        if toUser is None:
-            raise APIError("Missing To User")
-
-        fromUser = self.users.get(fromname, None)
-        if fromUser is None:
-            raise APIError("Missing From User")
-
-        newMessage = Message(toUser, fromUser, message)
-        fromUser.receiveMessage(newMessage)
-
-    def fetchMessages(self, username):
-        if name not in self.users:
-            raise APIError("Missing User")
-        return self.users.get(username).receiveMessage()
-
-    def deleteAccount(self, username):
-        user = self.users.pop(username, None)
-
-        if user is None:
-            raise APIError("Missing User")
-
-        user.cleanupGroups()
+if __name__ == "__main__":
+    app.run()

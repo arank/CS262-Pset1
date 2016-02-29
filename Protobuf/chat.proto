@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+message Message {
+  User from = 1;
+  User to = 2;
+  string msg = 3;
+}
+
+message Group {
+  string name = 1;
+  repeated User users = 2;
+}
+
+message User {
+  string name = 1;
+  repeated Group groups = 2;
+  repeated Message undeliveredMessages = 3;
+}
+
+message UserError {
+  string message = 1;
+}
