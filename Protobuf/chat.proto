@@ -1,8 +1,16 @@
 syntax = "proto2";
 
-//
-// Response Entities
-//
+message Message {
+  enum Type {
+    DIRECT = 1;
+    GROUP = 2;
+  }
+
+  required User from = 1;
+  optional User toUser = 2;
+  optional Group toGroup = 3;
+  required string msg = 4;
+}
 
 message Group {
   required string name = 1;
@@ -17,85 +25,4 @@ message User {
 
 message UserError {
   required string message = 1;
-}
-
-//
-// Request Entities
-//
-
-// Users
-
-message CreateUser {
-  required string username = 1;
-}
-
-message DeleteUser {
-  required string username = 1;
-}
-
-// Groups
-
-message CreateGroup {
-  required string groupname = 1;
-  repeated string memberNames = 2;
-}
-
-// Messages
-
-message FetchMessages {
-  required string username = 1;
-}
-
-//
-// Shared Entities
-//
-
-message Message {
-  enum Type {
-    DIRECT = 1;
-    GROUP = 2;
-  }
-
-  required User from = 1;
-  optional User toUser = 2;
-  optional Group toGroup = 3;
-  required string msg = 4;
-}
-
-//
-// Actions
-//
-
-message Request {
-  enum Action {
-    // Users
-    LIST_USERS = 1;
-    CREATE_USER = 2;
-    DELETE_USER = 3;
-
-    // Groups
-    LIST_GROUPS = 4;
-    CREATE_GROUP = 5;
-
-    // Messages
-    SEND_MESSAGE = 6;
-    FETCH_MESSAGES = 7;
-  }
-
-  // Identifies which field is filled in.
-  required Action action = 1;
-
-  // One of the following may be filled in, as
-  // determined by the Action field. Some actions
-  // do not require an additional payload.
-
-  // Users
-  optional CreateUser createUser = 2;
-  optional DeleteUser deleteUser = 3;
-
-  // Groups
-  optional CreateGroup createGroup = 4;
-
-  // Messages
-  optional Message sendMessage = 5;
 }
