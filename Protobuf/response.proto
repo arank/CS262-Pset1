@@ -3,12 +3,19 @@ syntax = "proto2";
 message User {
   required string username = 1;
   repeated string groupnames = 2;
-  repeated Message undeliveredMessages = 3;
+}
+
+message UserList {
+    repeated User users = 1;
 }
 
 message Group {
   required string groupname = 1;
   repeated string usernames = 2;
+}
+
+message GroupList {
+    repeated Group groups = 1;
 }
 
 message Message {
@@ -18,10 +25,14 @@ message Message {
   }
 
   required Type type = 1;
-  required User from = 2;
-  optional User toUser = 3;
-  optional Group toGroup = 4;
+  required string from = 2;
+  optional string toUser = 3;
+  optional string toGroup = 4;
   required string msg = 5;
+}
+
+message MessageList {
+    repeated Message messages = 1;
 }
 
 message UserError {

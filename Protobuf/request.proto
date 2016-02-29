@@ -1,0 +1,6 @@
+syntax = "proto2";
+
+message Message {
+  required string from = 1;
+  required string msg = 2;
+}

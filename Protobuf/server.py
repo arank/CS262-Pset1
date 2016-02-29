@@ -4,13 +4,13 @@
 # ********************************************
 
 from flask import Flask
-import chat
+from build import request_pb2 as RequestProtoBuf
 import model
 
 app = Flask(__name__)
 
-USERS = {}
-GROUPS = {}
+USERS = UserList()
+GROUPS = GroupList()
 
 #
 # Users
@@ -18,24 +18,24 @@ GROUPS = {}
 
 @app.get("/users")
 def listUsers():
-    return USERS.keys()
+    return USERS.serialize()
 
 @app.post("/users/:username")
 def createUser(username):
-    if name in USERS:
+    if USERS.usernameExists(username):
         raise UserError("User Exists")
-    newUser = User(name)
-    USERS[name] = newUser
-    return newUser
+
+    user = User(username)
+    USERS.addUser(user)
+    return user.serialize()
 
 @app.delete("/users/:username")
 def deleteUser(username):
-    user = USERS.pop(username, None)
-
-    if user is None:
+    if not USERS.usernameExists(username):
         raise UserError("Missing User")
 
-    user.cleanupGroups()
+    USERS.deleteUser(username)
+    GROUPS.pruneUser(username)
 
 #
 # Groups
@@ -43,61 +43,75 @@ def deleteUser(username):
 
 @app.get("/groups")
 def listGroups():
-    return GROUPS.keys()
+    return GROUPS.serialize()
 
 @app.post("/groups/:groupname")
 def createGroup(groupname):
-    if groupname in GROUPS:
-        return UserError("Group Exists")
+    if GROUPS.groupnameExists(groupname):
+        raise UserError("Group Exists")
 
-    members = [USERS.get(memberName, None) for memberName in memberNames]
-    if None in members:
-        raise UserError("Member does not exist")
-
-    newGroup = Group(groupname, memberNames)
-    GROUPS[groupname] = newGroup
-    return newGroup
+    group = Group(groupname)
+    GROUPS.addGroup(group)
+    return group.serialize()
 
 @app.put("/groups/:groupname/users/:username")
 def addUserToGroup(groupname, username):
-    # TODO
-    pass
+    group = GROUPS.getGroup(groupname)
+    if group is None:
+        raise UserError("Missing Group")
+
+    if not USERS.usernameExists(username):
+        raise UserError("User does not exist")
+
+    group.addUser(username)
+    return group.serialize()
 
 #
 # Messages
 #
 
+def decodeMessage(request):
+    # TODO: fix this
+    message = RequestProtoBuf.Message.unwrap(request.body)
+
+    if message.msg is None || msg == '':
+        raise UserError("Invaid Message Body")
+
+    fromUser = USERS.getUser(message.from)
+    if fromUser is None:
+        raise UserError("Invaid from User")
+
+    return fromUser, msg
+
 @app.post("/users/:username/messages")
 def sendDirectMessage(username):
-    toUser = USERS.get(toname, None)
+    msg, fromUser = decodeMessage(request)
+    toUser = USERS.getUser(username)
     if toUser is None:
         raise UserError("Missing To User")
 
-    fromUser = USERS.get(fromname, None)
-    if fromUser is None:
-        raise UserError("Missing From User")
-
-    newMessage = Message(toUser, fromUser, message)
-    fromUser.receiveMessage(newMessage)
+    message = DirectMessage(fromUser, toUser, msg)
+    toUser.receiveMessage(message)
+    return True
 
 @app.post("/groups/:groupname/messages")
 def sendGroupMessage(groupname):
-    toGroup = GROUPS.get(toname, None)
-    if toUser is None:
+    msg, fromUser = decodeMessage(request)
+    toGroup = GROUPS.getGroup(groupname)
+    if toGroup is None:
         raise UserError("Missing To Group")
 
-    fromUser = USERS.get(fromname, None)
-    if fromUser is None:
-        raise UserError("Missing From User")
-
-    newMessage = Message(toGroup, fromUser, message)
-    toGroup.receiveMessage(newMessage)
+    message = GroupMessage(fromUser, toGroup, msg)
+    toGroup.receiveMessage(message, USERS)
+    return True
 
 @app.get("/users/:username/messages")
 def listMessages(username):
-    if name not in USERS:
+    user = USERS.getUser(username)
+    if user is None:
         raise UserError("Missing User")
-    return USERS.get(username).receiveMessage()
+
+    return user.flushMessages()
 
 if __name__ == "__main__":
     app.run()
