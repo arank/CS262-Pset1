@@ -119,7 +119,7 @@ class MessageList(object):
 
 class DirectMessage(Message):
     def serialize(self):
-        dm = super()
+        dm = super(DirectMessage, self).serialize()
         dm.type = ResponseProtoBuf.Message.DIRECT
         dm.toUser = self.to.username
         return dm
@@ -127,7 +127,7 @@ class DirectMessage(Message):
 
 class GroupMessage(Message):
     def serialize(self):
-        gm = super()
+        gm = super(GroupMessage, self).serialize()
         dm.type = ResponseProtoBuf.Message.GROUP
         gm.toGroup = self.to.groupname
         return gm

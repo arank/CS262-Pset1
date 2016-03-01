@@ -3,24 +3,39 @@
 #        (the unreceived message has a ref to a deleted user)
 # ********************************************
 
-from flask import Flask
+from flask import Flask, request
 from build import request_pb2 as RequestProtoBuf
-from model import User, UserList, GroupList
+from model import User, UserList, GroupList, UserError, GroupMessage, DirectMessage
+from functools import wraps
 
 app = Flask(__name__)
 
 USERS = UserList()
 GROUPS = GroupList()
 
+def protoapi(f):
+    @wraps(f)
+    def wrapped(*args, **kwargs):
+        try:
+            response = f(*args, **kwargs)
+            if response is None:
+                return None
+            return response.SerializeToString()
+        except UserError as ue:
+            return ue.serialize().SerializeToString(), 400
+    return wrapped
+
 #
 # Users
 #
 
 @app.route("/users", methods=["GET"])
+@protoapi
 def listUsers():
     return USERS.serialize()
 
 @app.route("/users/<username>", methods=["POST"])
+@protoapi
 def createUser(username):
     if USERS.usernameExists(username):
         raise UserError("User Exists")
@@ -30,6 +45,7 @@ def createUser(username):
     return user.serialize()
 
 @app.route("/users/<username>", methods=["DELETE"])
+@protoapi
 def deleteUser(username):
     if not USERS.usernameExists(username):
         raise UserError("Missing User")
@@ -42,10 +58,12 @@ def deleteUser(username):
 #
 
 @app.route("/groups", methods=["GET"])
+@protoapi
 def listGroups():
     return GROUPS.serialize()
 
 @app.route("/groups/<groupname>", methods=["POST"])
+@protoapi
 def createGroup(groupname):
     if GROUPS.groupnameExists(groupname):
         raise UserError("Group Exists")
@@ -55,6 +73,7 @@ def createGroup(groupname):
     return group.serialize()
 
 @app.route("/groups/<groupname>/users/<username>", methods=["PUT"])
+@protoapi
 def addUserToGroup(groupname, username):
     group = GROUPS.getGroup(groupname)
     if group is None:
@@ -71,19 +90,20 @@ def addUserToGroup(groupname, username):
 #
 
 def decodeMessage(request):
-    # TODO: fix this
-    message = RequestProtoBuf.Message.unwrap(request.body)
+    message = RequestProtoBuf.Message()
+    message.ParseFromString(request.data)
 
-    if message.msg is None or msg == '':
+    if message.msg is None or message.msg == '':
         raise UserError("Invaid Message Body")
 
     fromUser = USERS.getUser(message.frm)
     if fromUser is None:
-        raise UserError("Invaid from User")
+        raise UserError("Invalid from User")
 
-    return fromUser, msg
+    return message.msg, fromUser
 
 @app.route("/users/<username>/messages", methods=["POST"])
+@protoapi
 def sendDirectMessage(username):
     msg, fromUser = decodeMessage(request)
     toUser = USERS.getUser(username)
@@ -92,9 +112,10 @@ def sendDirectMessage(username):
 
     message = DirectMessage(fromUser, toUser, msg)
     toUser.receiveMessage(message)
-    return True
+    return message.serialize()
 
 @app.route("/groups/<groupname>/messages", methods=["POST"])
+@protoapi
 def sendGroupMessage(groupname):
     msg, fromUser = decodeMessage(request)
     toGroup = GROUPS.getGroup(groupname)
@@ -103,9 +124,10 @@ def sendGroupMessage(groupname):
 
     message = GroupMessage(fromUser, toGroup, msg)
     toGroup.receiveMessage(message, USERS)
-    return True
+    return message.serialize()
 
 @app.route("/users/<username>/messages", methods=["GET"])
+@protoapi
 def listMessages(username):
     user = USERS.getUser(username)
     if user is None:
