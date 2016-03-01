@@ -1,3 +1,4 @@
+import re
 from sets import Set
 from build.protobufs import response_pb2 as ResponseProtoBuf
 
@@ -32,6 +33,14 @@ class UserList(object):
 
     def addUser(self, user):
         self.users[user.username] = user
+
+    def filter(self, query):
+        userList = UserList()
+
+        regex = re.compile(query.replace('*', '.*'))
+        userList.users = { u: v for u, v in self.users.items() if regex.match(u) }
+
+        return userList
 
     # Assumes a user with username exists
     def deleteUser(self, username):
@@ -77,6 +86,14 @@ class GroupList(object):
 
     def addGroup(self, group):
         self.groups[group.groupname] = group
+
+    def filter(self, query):
+        groupList = GroupList()
+
+        regex = re.compile(query.replace('*', '.*'))
+        groupList.groups = { g: v for g, v in self.groups.items() if regex.match(g) }
+
+        return groupList
 
     def pruneUser(self, username):
         for group in self.groups.values():
