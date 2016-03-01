@@ -99,7 +99,7 @@ class Message(object):
 
     def serialize(self):
         message = ResponseProtoBuf.Message()
-        message.frm = self.frm.username
+        message.frm.CopyFrom(self.frm.serialize())
         message.msg = self.msg
         return message
 
@@ -121,15 +121,15 @@ class DirectMessage(Message):
     def serialize(self):
         dm = super(DirectMessage, self).serialize()
         dm.type = ResponseProtoBuf.Message.DIRECT
-        dm.toUser = self.to.username
+        dm.toUser.CopyFrom(self.to.serialize())
         return dm
 
 
 class GroupMessage(Message):
     def serialize(self):
         gm = super(GroupMessage, self).serialize()
-        dm.type = ResponseProtoBuf.Message.GROUP
-        gm.toGroup = self.to.groupname
+        gm.type = ResponseProtoBuf.Message.GROUP
+        gm.toGroup.CopyFrom(self.to.serialize())
         return gm
 
 
