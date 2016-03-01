@@ -4,7 +4,7 @@ from build.protobufs import request_pb2 as RequestProtoBuf
 from build.protobufs import response_pb2 as ResponseProtoBuf
 from functools import wraps
 
-SERVER_HOST = 'http://37d9279c.ngrok.com'
+SERVER_HOST = 'http://127.0.0.1:5000'
 
 def published(method):
     method.published = True
@@ -80,8 +80,12 @@ class Client(object):
 
     @published
     @protoapi(ResponseProtoBuf.UserList)
-    def listusers(self):
-        return requests.get(SERVER_HOST + '/users')
+    def listusers(self, *args):
+        query = {}
+        if len(args) > 0:
+            query['q'] = args[0]
+
+        return requests.get(SERVER_HOST + '/users', params=query)
 
     @published
     @protoapi(ResponseProtoBuf.User)
@@ -97,8 +101,12 @@ class Client(object):
 
     @published
     @protoapi(ResponseProtoBuf.GroupList)
-    def listgroups(self):
-        return requests.get(SERVER_HOST + '/groups')
+    def listgroups(self, *args):
+        query = {}
+        if len(args) > 0:
+            query['q'] = args[0]
+
+        return requests.get(SERVER_HOST + '/groups', params=query)
 
     @published
     @protoapi(ResponseProtoBuf.Group)
