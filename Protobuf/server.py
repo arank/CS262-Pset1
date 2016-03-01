@@ -35,8 +35,8 @@ def protoapi(f):
 def listUsers():
     query = request.args.get('q')
     if query:
-        starless = [c for c in query if not c == '*']
-        if not starless.isalnum():
+        starless = query.replace('*', '')
+        if starless and not starless.isalnum():
             raise UserError("Invalid Query")
 
         return USERS.filter(query).serialize()
@@ -73,8 +73,8 @@ def deleteUser(username):
 def listGroups():
     query = request.args.get('q')
     if query:
-        starless = [c for c in query if not c == '*']
-        if not starless.isalnum():
+        starless = query.replace('*', '')
+        if starless and not starless.isalnum():
             raise UserError("Invalid Query")
 
         return GROUPS.filter(query).serialize()
