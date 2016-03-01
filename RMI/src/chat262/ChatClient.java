@@ -54,7 +54,7 @@ public class ChatClient {
 
                         case "/listgroups": {
                             String filter = command.length > 1 ? command[1] : null;
-                            for (String name : server.listAccounts(filter)) {
+                            for (String name : server.listGroups(filter)) {
                                 System.out.println("> " + name);
                             }
                             break;
@@ -77,7 +77,7 @@ public class ChatClient {
                                 currentUser = null;
                             }
                             break;
-
+                          
                         case "/m":
                             currentRoom = command[1];
                             break;
