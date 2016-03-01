@@ -1,3 +1,4 @@
+import re
 from sets import Set
 from build.protobufs import response_pb2 as ResponseProtoBuf
 
@@ -32,6 +33,14 @@ class UserList(object):
 
     def addUser(self, user):
         self.users[user.username] = user
+
+    def filter(self, query):
+        userList = UserList()
+
+        regex = re.compile(query.replace('*', '.*'))
+        userList.users = { u, v for u, v in self.users if regex.match(u) }
+
+        return userList
 
     # Assumes a user with username exists
     def deleteUser(self, username):

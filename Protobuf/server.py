@@ -4,6 +4,7 @@
 # ********************************************
 
 from flask import Flask, request
+import re
 from build.protobufs import request_pb2 as RequestProtoBuf
 from model import User, UserList, Group, GroupList, UserError, GroupMessage, DirectMessage
 from functools import wraps
@@ -32,12 +33,22 @@ def protoapi(f):
 @app.route("/users", methods=["GET"])
 @protoapi
 def listUsers():
-    return USERS.serialize()
+    query = request.args.get('q')
+    if query:
+        starless = [c for c in query if not c == '*']
+        if not isalnum(starless):
+            raise UserError("Invalid Query")
+
+        return USERS.filter(query).serialize()
+    else:
+        return USERS.serialize()
 
 @app.route("/users/<username>", methods=["POST"])
 @protoapi
 def createUser(username):
-    if USERS.usernameExists(username):
+    if not isalnum(username):
+        raise UserError("Invalid Username, Must Be Alphanumeric")
+    else if USERS.usernameExists(username):
         raise UserError("User Exists")
 
     user = User(username)
@@ -65,7 +76,9 @@ def listGroups():
 @app.route("/groups/<groupname>", methods=["POST"])
 @protoapi
 def createGroup(groupname):
-    if GROUPS.groupnameExists(groupname):
+    if not isalnum(groupname):
+        raise UserError("Invalid Groupname, Must Be Alphanumeric")
+    else if GROUPS.groupnameExists(groupname):
         raise UserError("Group Exists")
 
     group = Group(groupname)
