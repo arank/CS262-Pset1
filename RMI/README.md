@@ -26,13 +26,9 @@ Once you are in the client program you may issue the following commands from the
      
 Adds a user name that can be logged into. Throws an error of a user or a group with that name already exists.
 
-     /group <group name> 
+     /group <group name> <space seperated list of usernames>
      
-Adds a group with the given name that user can join. Throws an error of a user or a group with that name already exists.
-
-    /joingroup <group name>
-    
-If logged in under a user name, add yourself to the given group/
+Adds a group with the given name including all valid users in the list of usernames given. Throws an error of a user or a group with that name already exists or a user in the list of members does not exist.
 
     /listusers <pattern default=*>
     
@@ -48,7 +44,7 @@ Log the client in under the given user name.
 
     /leaveforever
     
-If logged in under a username this deletes your user from the server forever.
+If logged in under a username this deletes your user from the server forever, and removes the user from all groups they are in.
 
     /m <group name or user name>
     
