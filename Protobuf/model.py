@@ -4,13 +4,11 @@ from build.protobufs import response_pb2 as ResponseProtoBuf
 class User(object):
     def __init__(self, username):
         self.username = username
-        self.groups = Set()
         self.undeliveredMessages = MessageList()
 
     def serialize(self):
         user = ResponseProtoBuf.User()
         user.username = self.username
-        user.groupnames.extend([g.groupname for g in self.groups])
         return user
 
     def receiveMessage(self, message):
@@ -48,18 +46,16 @@ class UserList(object):
 class Group(object):
     def __init__(self, groupname):
         self.groupname = groupname
-        self.usernames = Set()
+        self.users = Set()
 
-    def addUser(self, username):
-        self.usernames.add(username)
+    def addUser(self, user):
+        self.users.add(user)
 
-    def pruneUser(self, username):
-        self.usernames.discard(username)
+    def pruneUser(self, user):
+        self.users.discard(user)
 
     def receiveMessage(self, message, userList):
-        for username in self.usernames:
-            user = userList.getUser(username)
-            assert user is not None
+        for user in self.users:
             user.receiveMessage(message)
 
     def serialize(self):
