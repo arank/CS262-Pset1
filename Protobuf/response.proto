@@ -25,7 +25,7 @@ message Message {
   }
 
   required Type type = 1;
-  required string from = 2;
+  required string frm = 2;
   optional string toUser = 3;
   optional string toGroup = 4;
   required string msg = 5;

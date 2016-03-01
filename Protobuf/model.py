@@ -10,7 +10,7 @@ class User(object):
     def serialize(self):
         user = ResponseProtoBuf.User()
         user.username = self.username
-        user.groupnames.extend([g.groupname for g in self.groups]])
+        user.groupnames.extend([g.groupname for g in self.groups])
         return user
 
     def receiveMessage(self, message):
@@ -92,14 +92,14 @@ class GroupList(object):
         return groups
 
 class Message(object):
-    def __init__(self, from, to, msg):
-        self.from = from
+    def __init__(self, frm, to, msg):
+        self.frm = frm
         self.to = to
         self.msg = msg
 
     def serialize(self):
         message = ResponseProtoBuf.Message()
-        message.from = self.from.username
+        message.frm = self.frm.username
         message.msg = self.msg
         return message
 

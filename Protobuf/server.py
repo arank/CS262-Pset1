@@ -5,7 +5,7 @@
 
 from flask import Flask
 from build import request_pb2 as RequestProtoBuf
-import model
+from model import User, UserList, GroupList
 
 app = Flask(__name__)
 
@@ -16,11 +16,11 @@ GROUPS = GroupList()
 # Users
 #
 
-@app.get("/users")
+@app.route("/users", methods=["GET"])
 def listUsers():
     return USERS.serialize()
 
-@app.post("/users/:username")
+@app.route("/users/<username>", methods=["POST"])
 def createUser(username):
     if USERS.usernameExists(username):
         raise UserError("User Exists")
@@ -29,7 +29,7 @@ def createUser(username):
     USERS.addUser(user)
     return user.serialize()
 
-@app.delete("/users/:username")
+@app.route("/users/<username>", methods=["DELETE"])
 def deleteUser(username):
     if not USERS.usernameExists(username):
         raise UserError("Missing User")
@@ -41,11 +41,11 @@ def deleteUser(username):
 # Groups
 #
 
-@app.get("/groups")
+@app.route("/groups", methods=["GET"])
 def listGroups():
     return GROUPS.serialize()
 
-@app.post("/groups/:groupname")
+@app.route("/groups/<groupname>", methods=["POST"])
 def createGroup(groupname):
     if GROUPS.groupnameExists(groupname):
         raise UserError("Group Exists")
@@ -54,7 +54,7 @@ def createGroup(groupname):
     GROUPS.addGroup(group)
     return group.serialize()
 
-@app.put("/groups/:groupname/users/:username")
+@app.route("/groups/<groupname>/users/<username>", methods=["PUT"])
 def addUserToGroup(groupname, username):
     group = GROUPS.getGroup(groupname)
     if group is None:
@@ -74,16 +74,16 @@ def decodeMessage(request):
     # TODO: fix this
     message = RequestProtoBuf.Message.unwrap(request.body)
 
-    if message.msg is None || msg == '':
+    if message.msg is None or msg == '':
         raise UserError("Invaid Message Body")
 
-    fromUser = USERS.getUser(message.from)
+    fromUser = USERS.getUser(message.frm)
     if fromUser is None:
         raise UserError("Invaid from User")
 
     return fromUser, msg
 
-@app.post("/users/:username/messages")
+@app.route("/users/<username>/messages", methods=["POST"])
 def sendDirectMessage(username):
     msg, fromUser = decodeMessage(request)
     toUser = USERS.getUser(username)
@@ -94,7 +94,7 @@ def sendDirectMessage(username):
     toUser.receiveMessage(message)
     return True
 
-@app.post("/groups/:groupname/messages")
+@app.route("/groups/<groupname>/messages", methods=["POST"])
 def sendGroupMessage(groupname):
     msg, fromUser = decodeMessage(request)
     toGroup = GROUPS.getGroup(groupname)
@@ -105,7 +105,7 @@ def sendGroupMessage(groupname):
     toGroup.receiveMessage(message, USERS)
     return True
 
-@app.get("/users/:username/messages")
+@app.route("/users/<username>/messages", methods=["GET"])
 def listMessages(username):
     user = USERS.getUser(username)
     if user is None:
@@ -114,4 +114,5 @@ def listMessages(username):
     return user.flushMessages()
 
 if __name__ == "__main__":
-    app.run()
+    # TODO : Not sure we should keep debug in 'prod'
+    app.run(debug=True)
