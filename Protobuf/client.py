@@ -1,6 +1,7 @@
 import cmd
 import requests
 from build.protobufs import request_pb2 as RequestProtoBuf
+from build.protobufs import response_pb2 as ResponseProtoBuf
 from functools import wraps
 
 SERVER_HOST = 'http://127.0.0.1:5000'
