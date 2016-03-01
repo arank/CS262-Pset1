@@ -4,8 +4,8 @@
 # ********************************************
 
 from flask import Flask, request
-from build import request_pb2 as RequestProtoBuf
-from model import User, UserList, GroupList, UserError, GroupMessage, DirectMessage
+from build.protobufs import request_pb2 as RequestProtoBuf
+from model import User, UserList, Group, GroupList, UserError, GroupMessage, DirectMessage
 from functools import wraps
 
 app = Flask(__name__)

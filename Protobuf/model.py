@@ -1,5 +1,5 @@
 from sets import Set
-from build import response_pb2 as ResponseProtoBuf
+from build.protobufs import response_pb2 as ResponseProtoBuf
 
 class User(object):
     def __init__(self, username):

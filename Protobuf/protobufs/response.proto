@@ -2,7 +2,6 @@ syntax = "proto2";
 
 message User {
   required string username = 1;
-  repeated string groupnames = 2;
 }
 
 message UserList {
@@ -11,7 +10,7 @@ message UserList {
 
 message Group {
   required string groupname = 1;
-  repeated string usernames = 2;
+  repeated User users = 2;
 }
 
 message GroupList {
