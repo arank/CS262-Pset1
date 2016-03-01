@@ -39,6 +39,33 @@ def protoapi(expectedType):
 class Client(object):
     def __init__(self):
         self.current_user = None
+        self.current_to = None
+        self.current_to_is_group = False
+
+    @published
+    def mvg(self, group):
+        self.current_to = group
+        self.current_to_is_group = True
+
+    @published
+    def mvu(self, user):
+        self.current_to = user
+        self.current_to_is_group = False
+
+    @published
+    def mvo(self):
+        self.current_to = None
+
+    @published
+    def send(self, *args):
+        if self.current_to is None:
+            print "<Not Sending To Anyone>"
+            return None
+
+        if self.current_to_is_group:
+            self.gm(self.current_to, args)
+        else:
+            self.dm(self.current_to, args)
 
     @published
     def login(self, user):
@@ -85,6 +112,9 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.Message)
     def dm(self, to_name, *args):
+        if self.current_user is None:
+            print "<Not Logged In>"
+            return None
         message = RequestProtoBuf.Message()
         message.frm = self.current_user
         message.msg = (' ').join(args)
@@ -95,6 +125,9 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.Message)
     def gm(self, to_name, *args):
+        if self.current_user is None:
+            print "<Not Logged In>"
+            return None
         message = RequestProtoBuf.Message()
         message.frm = self.current_user
         message.msg = (' ').join(args)
@@ -134,7 +167,7 @@ if __name__ == "__main__":
 
         # not a slash command
         if command[0] != "/":
-            client.sendMessage(command)
+            client.send(command)
 
         # is a slash command
         action = command.split(' ')
