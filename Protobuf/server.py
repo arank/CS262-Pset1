@@ -36,7 +36,7 @@ def listUsers():
     query = request.args.get('q')
     if query:
         starless = [c for c in query if not c == '*']
-        if not isalnum(starless):
+        if not starless.isalnum():
             raise UserError("Invalid Query")
 
         return USERS.filter(query).serialize()
@@ -46,9 +46,9 @@ def listUsers():
 @app.route("/users/<username>", methods=["POST"])
 @protoapi
 def createUser(username):
-    if not isalnum(username):
+    if not username.isalnum():
         raise UserError("Invalid Username, Must Be Alphanumeric")
-    else if USERS.usernameExists(username):
+    elif USERS.usernameExists(username):
         raise UserError("User Exists")
 
     user = User(username)
@@ -71,14 +71,22 @@ def deleteUser(username):
 @app.route("/groups", methods=["GET"])
 @protoapi
 def listGroups():
-    return GROUPS.serialize()
+    query = request.args.get('q')
+    if query:
+        starless = [c for c in query if not c == '*']
+        if not starless.isalnum():
+            raise UserError("Invalid Query")
+
+        return GROUPS.filter(query).serialize()
+    else:
+        return GROUPS.serialize()
 
 @app.route("/groups/<groupname>", methods=["POST"])
 @protoapi
 def createGroup(groupname):
-    if not isalnum(groupname):
+    if not groupname.isalnum():
         raise UserError("Invalid Groupname, Must Be Alphanumeric")
-    else if GROUPS.groupnameExists(groupname):
+    elif GROUPS.groupnameExists(groupname):
         raise UserError("Group Exists")
 
     group = Group(groupname)

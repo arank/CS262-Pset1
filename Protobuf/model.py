@@ -38,7 +38,7 @@ class UserList(object):
         userList = UserList()
 
         regex = re.compile(query.replace('*', '.*'))
-        userList.users = { u, v for u, v in self.users if regex.match(u) }
+        userList.users = { u: v for u, v in self.users.items() if regex.match(u) }
 
         return userList
 
@@ -86,6 +86,14 @@ class GroupList(object):
 
     def addGroup(self, group):
         self.groups[group.groupname] = group
+
+    def filter(self, query):
+        groupList = GroupList()
+
+        regex = re.compile(query.replace('*', '.*'))
+        groupList.groups = { g: v for g, v in self.groups.items() if regex.match(g) }
+
+        return groupList
 
     def pruneUser(self, username):
         for group in self.groups.values():
