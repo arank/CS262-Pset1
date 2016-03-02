@@ -1,5 +1,6 @@
 package chat262;
 
+import java.rmi.RemoteException;
 import java.util.*;
 import java.util.HashSet;
 import java.rmi.registry.LocateRegistry;
@@ -143,6 +144,33 @@ public class Server262 implements Protocol262 {
         
         users.remove(name);
     }
+
+    @Override
+    public synchronized void setListener(String username, PushReciever reciever) throws RemoteException {
+        if (!users.containsKey(username)) {
+            throw new IllegalArgumentException("Username doesn't exist");
+        }
+        
+        User user = users.get(username);
+        user.client = reciever;
+        user.deliverMessages();
+    }
+
+    @Override
+    public synchronized Boolean unsetListener(String username, PushReciever reciever) throws RemoteException {
+        if (!users.containsKey(username)) {
+            throw new IllegalArgumentException("Username doesn't exist");
+        }
+
+        User user = users.get(username);
+        if (user.client.equals(reciever)) {
+            user.client = null;
+            return true;
+        } else {
+            // mostly for debugging
+            return false;
+        }
+    }
 }
 
 interface Reciever {
@@ -154,6 +182,7 @@ class User implements Reciever {
     protected String username;
     protected Set<Group> groups;
     protected ArrayList<Message> undeliveredMessages;
+    public PushReciever client;
     
     public User(String name) {
         username = name;
@@ -178,6 +207,18 @@ class User implements Reciever {
     @Override
     public void recieveMessage(Message m) {
         undeliveredMessages.add(m);
+        deliverMessages();
+    }
+    
+    public void deliverMessages() {
+        try {
+        client.recieve(undeliveredMessages);
+        undeliveredMessages.clear();
+            
+        } catch (Exception e) {
+            // client went away; remove client
+            client = null;
+        }
     }
     
     @Override

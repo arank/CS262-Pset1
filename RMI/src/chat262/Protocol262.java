@@ -23,4 +23,7 @@ public interface Protocol262 extends Remote {
     public void sendMessage(String entityName, String from, String message_txt) throws IllegalArgumentException, RemoteException;
     public List<Message> fetchMessages(String name) throws IllegalArgumentException, RemoteException;
     public void deleteAccount(String name) throws IllegalArgumentException, RemoteException;
+
+    public void setListener(String username, PushReciever reciever) throws RemoteException;
+    public Boolean unsetListener(String username, PushReciever reciever) throws RemoteException;
 }

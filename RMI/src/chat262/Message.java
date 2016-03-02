@@ -11,7 +11,7 @@ import java.io.Serializable;
  *
  * @author Jared
  */
-class Message implements Serializable {
+public class Message implements Serializable {
     public static final long serialVersionUID = 1L;
 
     protected String from;

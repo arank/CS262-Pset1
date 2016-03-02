@@ -1,7 +1,9 @@
 package chat262;
 
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -19,6 +21,25 @@ import java.lang.*;
  * @author Jared
  */
 
+class PushWriter implements PushReciever {
+    private final String listeningFor;
+    
+    public PushWriter(String listeningFor) {
+        this.listeningFor = listeningFor;
+    }
+    
+    @Override
+    public void recieve(List<Message> msgs) {
+        for (Message m : msgs) {
+            String from = m.from;
+            if (!m.to.equals(listeningFor)) {
+                from += " to " + m.to;
+            }
+            System.out.println(from + ": " + m.msg);
+        }
+    }
+}
+
 public class ChatClient {
     public static void main(String[] args) throws Exception {
 	String host = (args.length < 1) ? null : args[0];
@@ -27,9 +48,8 @@ public class ChatClient {
         
         String currentUser = null;
         String currentRoom = null;
-        
-        Thread trollPoll = null;
-        
+        PushWriter listener = null;
+                
         Scanner input = new Scanner(System.in);        
         while (input.hasNext()) {
             // get a line of input
@@ -69,34 +89,27 @@ public class ChatClient {
                                 server.createAccount(user);
                             } catch (IllegalArgumentException e) {
                                 // user already exists
-                            }                        
-                            currentUser = user;
-                            //spawn seperate thread
-                            trollPoll = new Thread(new Runnable() {
-                                public void run() {
-                                	while(true){
-                                		try{
-                            				for (Message m : server.fetchMessages(user)) {
-		                                        String from = m.from;
-		                                        if (!m.to.equals(user)) {
-		                                            from += " to " + m.to;
-		                                        }
-		                                        System.out.println(from + ": " + m.msg);
-		                                    }
-                                		} catch (Exception e) {
-                                            System.err.println("> Troll Poll was Trolled");
-                                		}
-                                	}
-                                }
-                           });  
-                           trollPoll.start();
-                           break;
+                            }
+                            if (listener != null && currentUser != null) {
+                                server.unsetListener(currentUser, listener);
+                            }
+                            
+                            listener = new PushWriter(user);
+                            PushReciever stub = (PushReciever)UnicastRemoteObject.exportObject(listener, 0);
+                            try {
+                                server.setListener(user, stub);
+                                currentUser = user;
+                                
+                            } catch (Exception e) {
+                                listener = null;
+                                currentUser = null;
+                            }
+                            
+                            break;
                         }
 
                         case "/leaveforever":
                             if (currentUser != null) {
-                                trollPoll.stop(); 
-                                trollPoll = null;
                                 server.deleteAccount(currentUser);
                                 currentUser = null;
                             }
@@ -104,16 +117,6 @@ public class ChatClient {
                           
                         case "/m":
                             currentRoom = command[1];
-                            break;
-
-                        case "/get":
-                            for (Message m : server.fetchMessages(currentUser)) {
-                                String from = m.from;
-                                if (!m.to.equals(currentUser)) {
-                                    from += " to " + m.to;
-                                }
-                                System.out.println(from + ": " + m.msg);
-                            }
                             break;
                         
                         default:
