@@ -33,7 +33,7 @@ public class Server262 implements Protocol262 {
     }
     
     @Override
-    public void createAccount(String name) throws IllegalArgumentException {
+    public synchronized void createAccount(String name) throws IllegalArgumentException {
         if (users.containsKey(name) || groups.containsKey(name)) {
             throw new IllegalArgumentException("Username already exist");
         }
@@ -59,7 +59,7 @@ public class Server262 implements Protocol262 {
     }
     
     @Override
-    public void createGroup(String name, Set<String> members) throws IllegalArgumentException {
+    public synchronized void createGroup(String name, Set<String> members) throws IllegalArgumentException {
         if (users.containsKey(name) || groups.containsKey(name)) {
             throw new IllegalArgumentException("Group already exist");
         }
@@ -94,7 +94,7 @@ public class Server262 implements Protocol262 {
     }
     
     @Override
-    public void sendMessage(String to, String from, String message_txt) throws IllegalArgumentException {
+    public synchronized void sendMessage(String to, String from, String message_txt) throws IllegalArgumentException {
         Message m = new Message(from, message_txt, to);
 
         User from_user = users.get(from);
@@ -114,7 +114,7 @@ public class Server262 implements Protocol262 {
     }
     
     @Override
-    public List<Message> fetchMessages(String name) throws IllegalArgumentException {
+    public synchronized List<Message> fetchMessages(String name) throws IllegalArgumentException {
         if (!users.containsKey(name)) {
             throw new IllegalArgumentException("Username doesn't exist");
         }
@@ -128,7 +128,7 @@ public class Server262 implements Protocol262 {
     }
     
     @Override
-    public void deleteAccount(String name) throws IllegalArgumentException {
+    public synchronized void deleteAccount(String name) throws IllegalArgumentException {
         if (!users.containsKey(name)) {
             throw new IllegalArgumentException("Username doesn't exist");
         }

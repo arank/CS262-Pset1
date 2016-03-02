@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
+import java.lang.*;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -21,11 +22,13 @@ import java.util.Scanner;
 public class ChatClient {
     public static void main(String[] args) throws Exception {
 	String host = (args.length < 1) ? null : args[0];
-        Protocol262 server = getServer(host);
+        final Protocol262 server = getServer(host);
         System.out.println("connected to server");
         
         String currentUser = null;
         String currentRoom = null;
+        
+        Thread trollPoll = null;
         
         Scanner input = new Scanner(System.in);        
         while (input.hasNext()) {
@@ -61,18 +64,39 @@ public class ChatClient {
                         }
 
                         case "/login": {
-                            String user = command[1];
+                            final String user = command[1];
                             try {
                                 server.createAccount(user);
                             } catch (IllegalArgumentException e) {
                                 // user already exists
                             }                        
                             currentUser = user;
-                            break;
+                            //spawn seperate thread
+                            trollPoll = new Thread(new Runnable() {
+                                public void run() {
+                                	while(true){
+                                		try{
+                            				for (Message m : server.fetchMessages(user)) {
+		                                        String from = m.from;
+		                                        if (!m.to.equals(user)) {
+		                                            from += " to " + m.to;
+		                                        }
+		                                        System.out.println(from + ": " + m.msg);
+		                                    }
+                                		} catch (Exception e) {
+                                            System.err.println("> Troll Poll was Trolled");
+                                		}
+                                	}
+                                }
+                           });  
+                           trollPoll.start();
+                           break;
                         }
 
                         case "/leaveforever":
                             if (currentUser != null) {
+                                trollPoll.stop(); 
+                                trollPoll = null;
                                 server.deleteAccount(currentUser);
                                 currentUser = null;
                             }
@@ -111,4 +135,5 @@ public class ChatClient {
         Protocol262 stub = (Protocol262) registry.lookup("chat262");
         return stub;
     }
+    
 }
