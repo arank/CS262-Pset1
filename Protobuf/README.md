@@ -2,34 +2,34 @@
 
 We use Protocol Buffers v2. If using OS X, execute:
 
-        brew update && brew install protobuf
-        pip install requests protobuf
+    brew update && brew install protobuf
+    pip install requests protobuf
 
 # Run
 
 Before you run you must compile the protobufs, execute:
 
-        make
+    make
 
 Then to run the server, execute:
 
-        python server.py
+    python server.py
 
 Then to run the client, execute:
 
-        python client.py
+    python client.py
 
-NOTE: If python complains that build.protobufs doesn't exist, place __init__.py files (that are empty) in the build/ folder and the build/protobufs folder.
+NOTE: If python complains that build.protobufs doesn't exist, place `__init__.py` files (that are empty) in the build/ folder and the build/protobufs folder.
 
 # Usage
 
 Once you are in the client program you may issue the following commands from the command line
 
-     /adduser <user name>
+    /adduser <user name>
 
 Adds a user name that can be logged into. Throws an error of a user or a group with that name already exists.
 
-     /group <group name>
+    /group <group name>
 
 Adds a group with the given name with no members. Throws an error of a user or a group with that name already exists.
 
@@ -83,4 +83,4 @@ This sets the current recipient to None.
 
 Simply typing in characters without a slash command will send them from the logged in user to the current recipient.
 
-NOTE: Logging in does not validate the username. It is simply a client-side convenience. 
+NOTE: Logging in does not validate the username. It is simply a client-side convenience.
