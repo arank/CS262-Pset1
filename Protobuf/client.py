@@ -1,10 +1,11 @@
 import cmd
 import requests
+import time
 from build.protobufs import request_pb2 as RequestProtoBuf
 from build.protobufs import response_pb2 as ResponseProtoBuf
 from functools import wraps
 
-SERVER_HOST = 'http://127.0.0.1:5000'
+SERVER_HOST = 'http://127.0.0.1:5000/v1'
 
 def published(method):
     method.published = True
@@ -44,20 +45,24 @@ class Client(object):
 
     @published
     def mvg(self, group):
+        """Usage: /mvg <group> : Set current recipient to group"""
         self.current_to = group
         self.current_to_is_group = True
 
     @published
     def mvu(self, user):
+        """Usage: /mvg <user> : Set current recipient to user"""
         self.current_to = user
         self.current_to_is_group = False
 
     @published
     def mvo(self):
+        """Usage: /mvo : Unset current recipient"""
         self.current_to = None
 
     @published
     def send(self, *args):
+        """Usage: /send <message> : Send a message from the logged in user to the current recipient"""
         if self.current_to is None:
             print "<Not Sending To Anyone>"
             return None
@@ -68,11 +73,41 @@ class Client(object):
             self.dm(self.current_to, args)
 
     @published
-    def login(self, user):
+    def setuser(self, user):
+        """Usage: /setuser <username> : Set current user to user"""
         self.current_user = user
 
     @published
-    def logout(self):
+    def login(self):
+        """Usage: /login : Login to current user name"""
+        if self.current_user is None:
+            print "<Not Logged In>"
+            return None
+
+        while True:
+            try:
+                # request server messages
+                r = requests.get(SERVER_HOST + '/users/' + self.current_user + '/messages')
+                if r.status_code == 200:
+                    obj = ResponseProtoBuf.MessageList()
+                    obj.ParseFromString(r.content)
+                    if len(obj.messages) > 0:
+                        print str(obj)
+
+                elif r.status_code == 400:
+                    ue = ResponseProtoBuf.UserError()
+                    ue.ParseFromString(r.content)
+                    print str(ue)
+                    break
+
+                # back off so we don't break anything
+                time.sleep(1)
+            except KeyboardInterrupt:
+                break
+
+    @published
+    def clearuser(self):
+        """Usage: /clearuser : Set current user to None"""
         if self.current_user is None:
             print "<Not Logged In>"
             return None
@@ -81,6 +116,7 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.UserList)
     def listusers(self, *args):
+        """Usage: /listusers <filter default=*> : List users"""
         query = {}
         if len(args) > 0:
             query['q'] = args[0]
@@ -90,10 +126,12 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.User)
     def adduser(self, username):
+        """Usage: /adduser <username> : create user"""
         return requests.post(SERVER_HOST + '/users/' + username)
 
     @published
     def leaveforever(self):
+        """"Usage: /leaveforever : delete the current logged in user"""
         if self.current_user is None:
             print "<Not Logged In>"
             return None
@@ -102,6 +140,7 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.GroupList)
     def listgroups(self, *args):
+        """Usage: /listgroups <filter default=*> : list all the groups"""
         query = {}
         if len(args) > 0:
             query['q'] = args[0]
@@ -111,15 +150,19 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.Group)
     def group(self, groupname):
+        """Usage: /group <groupname> : create group"""
         return requests.post(SERVER_HOST + '/groups/' + groupname)
 
     @published
+    @protoapi(ResponseProtoBuf.Group)
     def invite(self, groupname, username):
+        """Usage: /invite <groupname> <username> : add user to group"""
         return requests.put(SERVER_HOST + '/groups/' + groupname + '/users/' + username)
 
     @published
     @protoapi(ResponseProtoBuf.Message)
     def dm(self, to_name, *args):
+        """Usage: /dm <username> <message> : send a message to user"""
         if self.current_user is None:
             print "<Not Logged In>"
             return None
@@ -133,6 +176,7 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.Message)
     def gm(self, to_name, *args):
+        """Usage: /gm <groupname> <message> : send a message to group"""
         if self.current_user is None:
             print "<Not Logged In>"
             return None
@@ -145,6 +189,7 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.MessageList)
     def get(self):
+        """Usage: /get : get unread messages"""
         if self.current_user is None:
             print "<Not Logged In>"
             return None
@@ -152,7 +197,7 @@ class Client(object):
 
     @published
     def help(self, function):
-        """usage: help [method]"""
+        """usage: /help [method] : get description of functions"""
         method = getattr(client, function, None)
         if method and method.published:
             print method.__doc__
@@ -161,6 +206,7 @@ class Client(object):
 
     @published
     def exit(self):
+        """usage: /exit : close the client"""
         exit()
 
 if __name__ == "__main__":

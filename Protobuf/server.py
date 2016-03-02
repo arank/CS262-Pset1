@@ -20,7 +20,7 @@ def protoapi(f):
         try:
             response = f(*args, **kwargs)
             if response is None:
-                return None
+                return "Success"
             return response.SerializeToString()
         except UserError as ue:
             return ue.serialize().SerializeToString(), 400
@@ -30,7 +30,7 @@ def protoapi(f):
 # Users
 #
 
-@app.route("/users", methods=["GET"])
+@app.route("/v1/users", methods=["GET"])
 @protoapi
 def listUsers():
     query = request.args.get('q')
@@ -43,7 +43,7 @@ def listUsers():
     else:
         return USERS.serialize()
 
-@app.route("/users/<username>", methods=["POST"])
+@app.route("/v1/users/<username>", methods=["POST"])
 @protoapi
 def createUser(username):
     if not username.isalnum():
@@ -55,7 +55,7 @@ def createUser(username):
     USERS.addUser(user)
     return user.serialize()
 
-@app.route("/users/<username>", methods=["DELETE"])
+@app.route("/v1/users/<username>", methods=["DELETE"])
 @protoapi
 def deleteUser(username):
     if not USERS.usernameExists(username):
@@ -64,11 +64,13 @@ def deleteUser(username):
     USERS.deleteUser(username)
     GROUPS.pruneUser(username)
 
+    return None
+
 #
 # Groups
 #
 
-@app.route("/groups", methods=["GET"])
+@app.route("/v1/groups", methods=["GET"])
 @protoapi
 def listGroups():
     query = request.args.get('q')
@@ -81,7 +83,7 @@ def listGroups():
     else:
         return GROUPS.serialize()
 
-@app.route("/groups/<groupname>", methods=["POST"])
+@app.route("/v1/groups/<groupname>", methods=["POST"])
 @protoapi
 def createGroup(groupname):
     if not groupname.isalnum():
@@ -93,7 +95,7 @@ def createGroup(groupname):
     GROUPS.addGroup(group)
     return group.serialize()
 
-@app.route("/groups/<groupname>/users/<username>", methods=["PUT"])
+@app.route("/v1/groups/<groupname>/users/<username>", methods=["PUT"])
 @protoapi
 def addUserToGroup(groupname, username):
     group = GROUPS.getGroup(groupname)
@@ -103,7 +105,7 @@ def addUserToGroup(groupname, username):
     if not USERS.usernameExists(username):
         raise UserError("User does not exist")
 
-    group.addUser(username)
+    group.addUser(USERS.getUser(username))
     return group.serialize()
 
 #
@@ -123,7 +125,7 @@ def decodeMessage(request):
 
     return message.msg, fromUser
 
-@app.route("/users/<username>/messages", methods=["POST"])
+@app.route("/v1/users/<username>/messages", methods=["POST"])
 @protoapi
 def sendDirectMessage(username):
     msg, fromUser = decodeMessage(request)
@@ -135,7 +137,7 @@ def sendDirectMessage(username):
     toUser.receiveMessage(message)
     return message.serialize()
 
-@app.route("/groups/<groupname>/messages", methods=["POST"])
+@app.route("/v1/groups/<groupname>/messages", methods=["POST"])
 @protoapi
 def sendGroupMessage(groupname):
     msg, fromUser = decodeMessage(request)
@@ -147,7 +149,7 @@ def sendGroupMessage(groupname):
     toGroup.receiveMessage(message, USERS)
     return message.serialize()
 
-@app.route("/users/<username>/messages", methods=["GET"])
+@app.route("/v1/users/<username>/messages", methods=["GET"])
 @protoapi
 def listMessages(username):
     user = USERS.getUser(username)
