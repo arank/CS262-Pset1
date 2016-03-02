@@ -45,13 +45,17 @@ Lists all users on the server filtering user names by the pattern (which recogni
 
 Lists all groups on the server filtering group names by the pattern (which recognizes only wildcard charecters). The default if no pattern is given is to match all groups.
 
-    /login <user name>
+    /setuser <user name>
 
-Log the client in under the given user name.
+Set the current user to the given user name.
 
-    /logout
+    /clearuser
 
-Log out the client.
+Set the current user to None.
+
+    /login
+
+Login the current user and poll for messages.
 
     /dm <username> <message>
 
@@ -81,6 +85,6 @@ This sets the current recipient to that user.
 
 This sets the current recipient to None.
 
-Simply typing in characters without a slash command will send them from the logged in user to the current recipient.
+Simply typing in characters without a slash command will send them from the currents user to the current recipient.
 
-NOTE: Logging in does not validate the username. It is simply a client-side convenience.
+NOTE: Setting the current user does not validate the username. It is simply a client-side convenience.

@@ -1,5 +1,6 @@
 import cmd
 import requests
+import time
 from build.protobufs import request_pb2 as RequestProtoBuf
 from build.protobufs import response_pb2 as ResponseProtoBuf
 from functools import wraps
@@ -72,13 +73,41 @@ class Client(object):
             self.dm(self.current_to, args)
 
     @published
-    def login(self, user):
-        """Usage: /login <username> : Login"""
+    def setuser(self, user):
+        """Usage: /setuser <username> : Set current user to user"""
         self.current_user = user
 
     @published
-    def logout(self):
-        """Usage: /logout : Logout"""
+    def login(self):
+        """Usage: /login : Login to current user name"""
+        if self.current_user is None:
+            print "<Not Logged In>"
+            return None
+
+        while True:
+            try:
+                # request server messages
+                r = requests.get(SERVER_HOST + '/users/' + self.current_user + '/messages')
+                if r.status_code == 200:
+                    obj = ResponseProtoBuf.MessageList()
+                    obj.ParseFromString(r.content)
+                    if len(obj.messages) > 0:
+                        print str(obj)
+
+                elif r.status_code == 400:
+                    ue = ResponseProtoBuf.UserError()
+                    ue.ParseFromString(r.content)
+                    print str(ue)
+                    break
+
+                # back off so we don't break anything
+                time.sleep(1)
+            except KeyboardInterrupt:
+                break
+
+    @published
+    def clearuser(self):
+        """Usage: /clearuser : Set current user to None"""
         if self.current_user is None:
             print "<Not Logged In>"
             return None
