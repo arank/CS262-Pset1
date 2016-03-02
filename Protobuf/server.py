@@ -20,7 +20,7 @@ def protoapi(f):
         try:
             response = f(*args, **kwargs)
             if response is None:
-                return None
+                return "Success"
             return response.SerializeToString()
         except UserError as ue:
             return ue.serialize().SerializeToString(), 400
@@ -64,6 +64,8 @@ def deleteUser(username):
     USERS.deleteUser(username)
     GROUPS.pruneUser(username)
 
+    return None
+
 #
 # Groups
 #
@@ -103,7 +105,7 @@ def addUserToGroup(groupname, username):
     if not USERS.usernameExists(username):
         raise UserError("User does not exist")
 
-    group.addUser(username)
+    group.addUser(USERS.getUser(username))
     return group.serialize()
 
 #

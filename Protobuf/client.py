@@ -44,20 +44,24 @@ class Client(object):
 
     @published
     def mvg(self, group):
+        """Usage: /mvg <group> : Set current recipient to group"""
         self.current_to = group
         self.current_to_is_group = True
 
     @published
     def mvu(self, user):
+        """Usage: /mvg <user> : Set current recipient to user"""
         self.current_to = user
         self.current_to_is_group = False
 
     @published
     def mvo(self):
+        """Usage: /mvo : Unset current recipient"""
         self.current_to = None
 
     @published
     def send(self, *args):
+        """Usage: /send <message> : Send a message from the logged in user to the current recipient"""
         if self.current_to is None:
             print "<Not Sending To Anyone>"
             return None
@@ -69,10 +73,12 @@ class Client(object):
 
     @published
     def login(self, user):
+        """Usage: /login <username> : Login"""
         self.current_user = user
 
     @published
     def logout(self):
+        """Usage: /logout : Logout"""
         if self.current_user is None:
             print "<Not Logged In>"
             return None
@@ -81,6 +87,7 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.UserList)
     def listusers(self, *args):
+        """Usage: /listusers <filter default=*> : List users"""
         query = {}
         if len(args) > 0:
             query['q'] = args[0]
@@ -90,10 +97,12 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.User)
     def adduser(self, username):
+        """Usage: /adduser <username> : create user"""
         return requests.post(SERVER_HOST + '/users/' + username)
 
     @published
     def leaveforever(self):
+        """"Usage: /leaveforever : delete the current logged in user"""
         if self.current_user is None:
             print "<Not Logged In>"
             return None
@@ -102,6 +111,7 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.GroupList)
     def listgroups(self, *args):
+        """Usage: /listgroups <filter default=*> : list all the groups"""
         query = {}
         if len(args) > 0:
             query['q'] = args[0]
@@ -111,15 +121,19 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.Group)
     def group(self, groupname):
+        """Usage: /group <groupname> : create group"""
         return requests.post(SERVER_HOST + '/groups/' + groupname)
 
     @published
+    @protoapi(ResponseProtoBuf.Group)
     def invite(self, groupname, username):
+        """Usage: /invite <groupname> <username> : add user to group"""
         return requests.put(SERVER_HOST + '/groups/' + groupname + '/users/' + username)
 
     @published
     @protoapi(ResponseProtoBuf.Message)
     def dm(self, to_name, *args):
+        """Usage: /dm <username> <message> : send a message to user"""
         if self.current_user is None:
             print "<Not Logged In>"
             return None
@@ -133,6 +147,7 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.Message)
     def gm(self, to_name, *args):
+        """Usage: /gm <groupname> <message> : send a message to group"""
         if self.current_user is None:
             print "<Not Logged In>"
             return None
@@ -145,6 +160,7 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.MessageList)
     def get(self):
+        """Usage: /get : get unread messages"""
         if self.current_user is None:
             print "<Not Logged In>"
             return None
@@ -152,7 +168,7 @@ class Client(object):
 
     @published
     def help(self, function):
-        """usage: help [method]"""
+        """usage: /help [method] : get description of functions"""
         method = getattr(client, function, None)
         if method and method.published:
             print method.__doc__
@@ -161,6 +177,7 @@ class Client(object):
 
     @published
     def exit(self):
+        """usage: /exit : close the client"""
         exit()
 
 if __name__ == "__main__":

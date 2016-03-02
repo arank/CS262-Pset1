@@ -70,7 +70,7 @@ class Group(object):
     def serialize(self):
         group = ResponseProtoBuf.Group()
         group.groupname = self.groupname
-        group.usernames.extend([u.username for u in self.users])
+        group.users.extend([u.serialize() for u in self.users])
         return group
 
 
