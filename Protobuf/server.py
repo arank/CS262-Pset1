@@ -1,19 +1,27 @@
-# ********************************************
-# TODO : What do we do if a user sends a message, then deletes themself?
-#        (the unreceived message has a ref to a deleted user)
-# ********************************************
-
 from flask import Flask, request
 import re
+from google.protobuf.message import DecodeError
 from build.protobufs import request_pb2 as RequestProtoBuf
 from model import User, UserList, Group, GroupList, UserError, GroupMessage, DirectMessage
 from functools import wraps
 
 app = Flask(__name__)
 
+#
+# Maintain global variables to act as a pseudo-database for all users and groups.
+#
+# N.B. There is no persistence, in that when the server restarts all information
+# about users and groups is lost.
+#
+
 USERS = UserList()
 GROUPS = GroupList()
 
+# If the response is a ProtoBuf object, then we should serialize it into a string
+# that will be returned in the HTTP response body. The @protoapi annotation is
+# a piece of middleware that should wrap around all API methods. It is also
+# responsible for catching UserErrors, which can be thrown by a methods to
+# indicate that the user has supplied invalid request parameters.
 def protoapi(f):
     @wraps(f)
     def wrapped(*args, **kwargs):
@@ -27,9 +35,11 @@ def protoapi(f):
     return wrapped
 
 #
-# Users
+# API user methods
 #
 
+# Validates that the query string contains only alphanumeric characters and
+# wildcards, then returns the global list of users filtered to the query.
 @app.route("/v1/users", methods=["GET"])
 @protoapi
 def listUsers():
@@ -43,6 +53,7 @@ def listUsers():
     else:
         return USERS.serialize()
 
+# Creates a user object and adds it to the global user list.
 @app.route("/v1/users/<username>", methods=["POST"])
 @protoapi
 def createUser(username):
@@ -55,6 +66,10 @@ def createUser(username):
     USERS.addUser(user)
     return user.serialize()
 
+# Deletes a user, removing them from any groups they may have joined. Note that
+# an undelivered messages could potentially still hold a reference to the user
+# object, and so the object will remain in memory until all such messages are
+# flushed.
 @app.route("/v1/users/<username>", methods=["DELETE"])
 @protoapi
 def deleteUser(username):
@@ -67,9 +82,11 @@ def deleteUser(username):
     return None
 
 #
-# Groups
+# API group methods
 #
 
+# Validates that the query string contains only alphanumeric characters and
+# wildcards, then returns the global list of users filtered to the query.
 @app.route("/v1/groups", methods=["GET"])
 @protoapi
 def listGroups():
@@ -83,6 +100,8 @@ def listGroups():
     else:
         return GROUPS.serialize()
 
+# Creates a new group object with no users and adds it to the global group
+# list
 @app.route("/v1/groups/<groupname>", methods=["POST"])
 @protoapi
 def createGroup(groupname):
@@ -95,6 +114,7 @@ def createGroup(groupname):
     GROUPS.addGroup(group)
     return group.serialize()
 
+# Adds a user to a group by name.
 @app.route("/v1/groups/<groupname>/users/<username>", methods=["PUT"])
 @protoapi
 def addUserToGroup(groupname, username):
@@ -112,9 +132,16 @@ def addUserToGroup(groupname, username):
 # Messages
 #
 
+# The ProtoBuf encoded message is sent as a string in the request body.
+# We parse the string into a new Python ProtoBuf message object, and
+# return the message string as well as the Python object for the sender.
 def decodeMessage(request):
     message = RequestProtoBuf.Message()
-    message.ParseFromString(request.data)
+
+    try:
+        message.ParseFromString(request.data)
+    except DecodeError:
+        raise UserError("Invaid Message Protocol Buffer")
 
     if message.msg is None or message.msg == '':
         raise UserError("Invaid Message Body")
@@ -125,6 +152,8 @@ def decodeMessage(request):
 
     return message.msg, fromUser
 
+# Decode the message and create a new DirectMessage object to be received
+# by the user. Responds to the request with the serialized message.
 @app.route("/v1/users/<username>/messages", methods=["POST"])
 @protoapi
 def sendDirectMessage(username):
@@ -137,6 +166,8 @@ def sendDirectMessage(username):
     toUser.receiveMessage(message)
     return message.serialize()
 
+# Decode the message and create a new GroupMessage object to be received
+# by the user. Responds to the request with the serialized message.
 @app.route("/v1/groups/<groupname>/messages", methods=["POST"])
 @protoapi
 def sendGroupMessage(groupname):
@@ -149,6 +180,8 @@ def sendGroupMessage(groupname):
     toGroup.receiveMessage(message, USERS)
     return message.serialize()
 
+# List all the messages for the given user, and clear them from the user's
+# message queue so that they are only delivered once.
 @app.route("/v1/users/<username>/messages", methods=["GET"])
 @protoapi
 def listMessages(username):
