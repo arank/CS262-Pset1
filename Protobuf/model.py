@@ -2,9 +2,17 @@ import re
 from sets import Set
 from build.protobufs import response_pb2 as ResponseProtoBuf
 
+#
+# These are effectively syntatic sugar for the ProtoBufs. They allow us to set
+# properties on these objects and simply call the .serialize() when we want a
+# protobuf represeantion.
+#
+
+# A single user
 class User(object):
     def __init__(self, username):
         self.username = username
+        # this is a list of messages that still need to be delivered to the user
         self.undeliveredMessages = MessageList()
 
     def serialize(self):
@@ -15,12 +23,14 @@ class User(object):
     def receiveMessage(self, message):
         self.undeliveredMessages.addMessage(message)
 
+    # returns undelivered messages and empties the internal list of messages to
+    # deliver
     def flushMessages(self):
         messages = self.undeliveredMessages.serialize()
         self.undeliveredMessages = MessageList()
         return messages
 
-
+# a list of users
 class UserList(object):
     def __init__(self):
         self.users = {}
@@ -51,7 +61,7 @@ class UserList(object):
         users.users.extend([u.serialize() for u in self.users.values()])
         return users
 
-
+# a group, which includes 0 or more users
 class Group(object):
     def __init__(self, groupname):
         self.groupname = groupname
@@ -73,7 +83,7 @@ class Group(object):
         group.users.extend([u.serialize() for u in self.users])
         return group
 
-
+# a list of groups
 class GroupList(object):
     def __init__(self):
         self.groups = {}
@@ -104,6 +114,8 @@ class GroupList(object):
         groups.groups.extend([g.serialize() for g in self.groups.values()])
         return groups
 
+# A message representation, contains a from, to, and message. From must be a
+# user, although to can be either a group or user.
 class Message(object):
     def __init__(self, frm, to, msg):
         self.frm = frm
@@ -116,7 +128,7 @@ class Message(object):
         message.msg = self.msg
         return message
 
-
+# A list of messages.
 class MessageList(object):
     def __init__(self):
         self.messages = []
@@ -129,7 +141,11 @@ class MessageList(object):
         messages.messages.extend([m.serialize() for m in self.messages])
         return messages
 
+# NOTE: Both DirectMessage and GroupMessage are backed by the Message protobuf
+#       they just set different fields to indicate whether they are directed to
+#       a user or group and inherit from the Message object.
 
+# A direct message to another user
 class DirectMessage(Message):
     def serialize(self):
         dm = super(DirectMessage, self).serialize()
@@ -137,7 +153,7 @@ class DirectMessage(Message):
         dm.toUser.CopyFrom(self.to.serialize())
         return dm
 
-
+# A message to a group
 class GroupMessage(Message):
     def serialize(self):
         gm = super(GroupMessage, self).serialize()
