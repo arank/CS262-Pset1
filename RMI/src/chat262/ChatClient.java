@@ -97,20 +97,35 @@ public class ChatClient {
         /*
         Each line of stdin is a command, so we iterate through the lines of
         stdin and dispatch the command for each line.
+        Lines like "/{command} {arg1} {arg2}" are commands, where "{command}" is
+        the name of the command and the "{argn}"s are space separated arguments.
+        All other lines are messages to the current room.
         */
         Scanner input = new Scanner(System.in);
         while (input.hasNext()) {
             String line = input.nextLine();
             
+            // we recognize commands because they start with "/{commandname}"
             if (line.startsWith("/")) {
+                // Rather than crash ever due to bad input, catch everything.
+                // We try to not need to hit this, but in case of programmer
+                // error, this is the most robust for the user.
                 try {
                     String[] command = line.split(" ");
                     switch (command[0]) {
+                        // add a user to the server
+                        // usage: /adduser {username}
                         case "/adduser":
                             server.createAccount(command[1]);
                             break;
 
+                        // make a named group with a set of members
+                        // you cannot add or remove members later
+                        // you are not automatically added to groups you make
+                        // usage: /group {groupname} {member1} {member2} {..membern}
                         case "/group":
+                            // copy the members into an ArrayList, because Java feels icky about
+                            // allowing the wrong types of Lists into HashSets.
                             List<String> members = Arrays.asList(Arrays.copyOfRange(command, 2, command.length));
                             server.createGroup(command[1], new HashSet<>(members));
                             break;
@@ -171,6 +186,8 @@ public class ChatClient {
                             throw new IllegalArgumentException("bad command");
                     }
                 } catch (Exception e) {
+                    // Exceptions are typically caused by commands failing to parse,
+                    // not existing, or not taking enough arguments
                     System.err.println("> Bad Command");
                 }
             } else {
