@@ -53,9 +53,11 @@ class PushWriter implements PushReciever {
      * queue sequentially, we'd have to wait for each send to complete before
      * sending the next message, which would cost an extra 
      * (number of messages - 1) * round trip latency.
+     * There should only be one server and it should only do call .recieve()
+     * once at a time, but synchronize this method just in case.
      */
     @Override
-    public void recieve(List<Message> msgs) {
+    public synchronized void recieve(List<Message> msgs) {
         for (Message m : msgs) {
             String from = m.from;
             if (!m.to.equals(listeningFor)) {
@@ -130,6 +132,8 @@ public class ChatClient {
                             server.createGroup(command[1], new HashSet<>(members));
                             break;
 
+                        // list all users registered with the server
+                        // usage: /listusers
                         case "/listusers": {
                             String filter = command.length > 1 ? command[1] : null;
                             for (String name : server.listAccounts(filter)) {
@@ -138,6 +142,8 @@ public class ChatClient {
                             break;
                         }
 
+                        // list all groups registered with the server
+                        // usage: /listgroups
                         case "/listgroups": {
                             String filter = command.length > 1 ? command[1] : null;
                             for (String name : server.listGroups(filter)) {
@@ -171,6 +177,11 @@ public class ChatClient {
                             break;
                         }
 
+                        // log out and delete account
+                        // note that we can still recieve messages to the current users'
+                        // PushWriter; this is unavoidable.  However, we don't cut off
+                        // the PushWriter either; the dead man's letters will keep being
+                        // printed to his last address.
                         case "/leaveforever":
                             if (currentUser != null) {
                                 server.deleteAccount(currentUser);
@@ -178,6 +189,11 @@ public class ChatClient {
                             }
                             break;
 
+                        // set who the current conversation is with
+                        // usage 1: /m {username}
+                        // usage 2: /m groupname
+                        // users and groups share a namespace
+                        // we do not verify 
                         case "/m":
                             currentRoom = command[1];
                             break;
@@ -187,12 +203,23 @@ public class ChatClient {
                     }
                 } catch (Exception e) {
                     // Exceptions are typically caused by commands failing to parse,
-                    // not existing, or not taking enough arguments
+                    // not existing, or not taking enough arguments.
+                    // It's likely the user's fault, so we blame them by default.
+                    // If it's a remote error, we lie to the user and tell them
+                    // it's their fault.
                     System.err.println("> Bad Command");
                 }
             } else {
                 if (currentUser != null && currentRoom != null) {
-                    server.sendMessage(currentRoom, currentUser, line);
+                    try {
+                        server.sendMessage(currentRoom, currentUser, line);
+                    } catch (IllegalArgumentException e) {
+                        System.err.println("> " + currentRoom + " does not exist");
+                    } catch (RemoteException e) {
+                        System.err.println("> disconnected from server");
+                    } catch (Exception e) {
+                        System.err.println("> unknown error");
+                    }
                 }
             }
         }
