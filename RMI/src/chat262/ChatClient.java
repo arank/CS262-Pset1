@@ -171,10 +171,13 @@ public class ChatClient {
                                 server.unsetListener(currentUser, listener);
                             }
 
-                            // 
+                            // Set up a push notification receiving server to 
+                            // listen for the logging in user's messages
                             listener = new PushWriter(user);
                             PushReciever stub = (PushReciever)UnicastRemoteObject.exportObject(listener, 0);
                             try {
+                                // send the "chat server" a ref to the "chat client's"
+                                // push notification accepting RMI server
                                 server.setListener(user, stub);
                                 currentUser = user;
 
