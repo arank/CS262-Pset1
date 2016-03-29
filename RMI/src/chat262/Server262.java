@@ -79,7 +79,7 @@ public class Server262 implements Protocol262 {
     }
     
     @Override
-    public Set<String> listGroups(String filter) {
+    public synchronized Set<String> listGroups(String filter) {
     	HashSet<String> all_groups = new HashSet<>(groups.keySet());
     	if (filter == null || filter.length() == 0) {
     		filter = "*";
