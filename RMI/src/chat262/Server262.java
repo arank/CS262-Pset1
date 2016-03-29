@@ -12,6 +12,8 @@ import java.rmi.server.UnicastRemoteObject;
 * @author Jared
 * @author Aran
 * @version 1.0z Mar 28 2016
+* 
+* All methods are synchronized to ensure no concurrency issues.
 */
 public class Server262 implements Protocol262 {
     // The map of all users currently registered with the server
