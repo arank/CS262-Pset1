@@ -152,23 +152,33 @@ public class ChatClient {
                             break;
                         }
 
+                        // login as a user to send messages as them and recieve their messages
+                        // usage: /login {username}
                         case "/login": {
                             final String user = command[1];
+                            
+                            // create the user account on the server if it does not exist
                             try {
                                 server.createAccount(user);
                             } catch (IllegalArgumentException e) {
                                 // user already exists
                             }
+                            
+                            // if there's a previous user, log  them out 
+                            // and stop listening to their messages
                             if (listener != null && currentUser != null) {
+                                // tell the server to stop sending us their messages
                                 server.unsetListener(currentUser, listener);
                             }
 
+                            // 
                             listener = new PushWriter(user);
                             PushReciever stub = (PushReciever)UnicastRemoteObject.exportObject(listener, 0);
                             try {
                                 server.setListener(user, stub);
                                 currentUser = user;
 
+                            // if logging in on the server fails, clean up
                             } catch (Exception e) {
                                 listener = null;
                                 currentUser = null;
@@ -193,7 +203,7 @@ public class ChatClient {
                         // usage 1: /m {username}
                         // usage 2: /m groupname
                         // users and groups share a namespace
-                        // we do not verify 
+                        // we do not verify if the current room exists
                         case "/m":
                             currentRoom = command[1];
                             break;
@@ -210,13 +220,20 @@ public class ChatClient {
                     System.err.println("> Bad Command");
                 }
             } else {
+                // When the user doesn't type a command, we assume it's a message.
+                // If we have a user and a recipient, we send the message from
+                // the logged in user to the current room.
                 if (currentUser != null && currentRoom != null) {
                     try {
                         server.sendMessage(currentRoom, currentUser, line);
+                        
                     } catch (IllegalArgumentException e) {
+                        // The server throws IllegalArgument if and only if the room does not exist
                         System.err.println("> " + currentRoom + " does not exist");
+                        
                     } catch (RemoteException e) {
                         System.err.println("> disconnected from server");
+                        
                     } catch (Exception e) {
                         System.err.println("> unknown error");
                     }
