@@ -192,5 +192,9 @@ def listMessages(username):
     return user.flushMessages()
 
 if __name__ == "__main__":
-    # TODO : Not sure we should keep debug in 'prod'
+
+    #
+    # NOTE: Turn off debug in Prod
+    #
+
     app.run(debug=True)

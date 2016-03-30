@@ -13,19 +13,20 @@ from functools import wraps
 SERVER_HOST = 'http://127.0.0.1:5000/v1'
 
 # This is a wrapper to "publish" methods on the Client object. Publishing a
-# method will make it callable from the command line.
+# method will make it callable from the command line (see below).
 def published(method):
     method.published = True
     return method
 
-# Typically the return value from a method in the Client object called from the
-# command line (via a slash command) is printed directly to the command line.
 #
 # This wrapper calls the wrapped function, and interprets the response as a
 # requests' library Response object (parsing the content as a protobuf) and
 # prints a string representation of the content encoded in the response.
 #
-# Specifically this is useful when returning responses from our API, which will
+# It is syntatic sugar so that wrapped functions may simply return what they
+# want printed. This is used extensively in the client object.
+#
+# This is especially useful when returning responses from our API, which will
 # include protobufs in the body. This function will take the response, and if it
 # had a status of 200 (HTTP OK) it will parse the response body with a protobuf
 # of "expectedType" (which is passed as an argument). In the case the response
@@ -44,8 +45,8 @@ def protoapi(expectedType):
         def wrapped(*args, **kwargs):
             response = f(*args, **kwargs)
 
-            # There was a client error, and the request was never made, simply
-            # return the error to the user.
+            # There was a client error, and the request was never made.
+            # Don't print anything and return.
             if response is None:
                 return
 
@@ -77,13 +78,13 @@ def protoapi(expectedType):
 # This allows us to write an extendable interface, where adding one more command
 # is a matter of adding a method to the Client object.
 #
-# NOTE: Not typing in a slash command (e.g. just typing "FOO BAR") will prepend
+# NOTE: Not typing in a slash command (e.g. just typing "FOO BAR") will effectively prepend
 #       your command with "/send" (e.g. "FOO BAR" becomes "/send FOO BAR")
 
 class Client(object):
     def __init__(self):
-        # This is the current state for the clients. Allows you to send messages
-        # to users and groups without having to specify who.
+        # This is the current state for the clients. Allows user to send messages
+        # to other users and groups without having to specify who every time.
 
         # The user that is sending messages by default
         self.current_user = None
@@ -94,24 +95,38 @@ class Client(object):
 
     @published
     def mvg(self, group):
-        """Usage: /mvg <group> : Set current recipient to group"""
+        """
+        Set current recipient to group
+        Usage: /mvg <group>
+        """
         self.current_to = group
         self.current_to_is_group = True
 
     @published
     def mvu(self, user):
-        """Usage: /mvg <user> : Set current recipient to user"""
+        """
+        Set current recipient to user
+        Usage: /mvg <user>
+        """
         self.current_to = user
         self.current_to_is_group = False
 
     @published
     def mvo(self):
-        """Usage: /mvo : Unset current recipient"""
+        """
+        Unset current recipient
+        Usage: /mvo
+        """
         self.current_to = None
 
     @published
     def send(self, *args):
-        """Usage: /send <message> : Send a message from the logged in user to the current recipient"""
+        """
+        Send a message from the logged in user to the current recipient
+        Usage: /send <message>
+        """
+
+        # make sure there is a current user to send to
         if self.current_to is None:
             print "<Not Sending To Anyone>"
             return None
@@ -123,12 +138,18 @@ class Client(object):
 
     @published
     def setuser(self, user):
-        """Usage: /setuser <username> : Set current user to user"""
+        """
+        Set current user to user
+        Usage: /setuser <username>
+        """
         self.current_user = user
 
     @published
     def login(self):
-        """Usage: /login : Login to current user name"""
+        """
+        Login to current user name (and poll for messages)
+        Usage: /login
+        """
         if self.current_user is None:
             print "<Current user name not set>"
             return None
@@ -165,7 +186,10 @@ class Client(object):
 
     @published
     def clearuser(self):
-        """Usage: /clearuser : Set current user to None"""
+        """
+        Set current user to None
+        Usage: /clearuser
+        """
         if self.current_user is None:
             print "<Not Logged In>"
             return None
@@ -174,7 +198,10 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.UserList)
     def listusers(self, *args):
-        """Usage: /listusers <filter default=*> : List users"""
+        """
+        List users
+        Usage: /listusers <filter default=*>
+        """
         query = {}
         if len(args) > 0:
             query['q'] = args[0]
@@ -184,12 +211,18 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.User)
     def adduser(self, username):
-        """Usage: /adduser <username> : create user"""
+        """
+        Create user
+        Usage: /adduser <username>
+        """
         return requests.post(SERVER_HOST + '/users/' + username)
 
     @published
     def leaveforever(self):
-        """"Usage: /leaveforever : delete the current logged in user"""
+        """"
+        Delete the current logged in user
+        Usage: /leaveforever
+        """
         if self.current_user is None:
             print "<Not Logged In>"
             return None
@@ -198,7 +231,10 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.GroupList)
     def listgroups(self, *args):
-        """Usage: /listgroups <filter default=*> : list all the groups"""
+        """
+        List all the groups
+        Usage: /listgroups <filter default=*>
+        """
         query = {}
         if len(args) > 0:
             query['q'] = args[0]
@@ -208,19 +244,28 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.Group)
     def group(self, groupname):
-        """Usage: /group <groupname> : create group"""
+        """
+        Create a group
+        Usage: /group <groupname>
+        """
         return requests.post(SERVER_HOST + '/groups/' + groupname)
 
     @published
     @protoapi(ResponseProtoBuf.Group)
     def invite(self, groupname, username):
-        """Usage: /invite <groupname> <username> : add user to group"""
+        """
+        Add user to group
+        Usage: /invite <groupname> <username>
+        """
         return requests.put(SERVER_HOST + '/groups/' + groupname + '/users/' + username)
 
     @published
     @protoapi(ResponseProtoBuf.Message)
     def dm(self, to_name, *args):
-        """Usage: /dm <username> <message> : send a message to user"""
+        """
+        Send a message to user
+        Usage: /dm <username> <message>
+        """
         if self.current_user is None:
             print "<Not Logged In>"
             return None
@@ -234,7 +279,10 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.Message)
     def gm(self, to_name, *args):
-        """Usage: /gm <groupname> <message> : send a message to group"""
+        """
+        Send a message to group
+        Usage: /gm <groupname> <message>
+        """
         if self.current_user is None:
             print "<Not Logged In>"
             return None
@@ -247,7 +295,10 @@ class Client(object):
     @published
     @protoapi(ResponseProtoBuf.MessageList)
     def get(self):
-        """Usage: /get : get unread messages"""
+        """
+        Get unread messages
+        Usage: /get
+        """
         if self.current_user is None:
             print "<Not Logged In>"
             return None
@@ -255,7 +306,10 @@ class Client(object):
 
     @published
     def help(self, function):
-        """usage: /help [method] : get description of functions"""
+        """
+        Get description of functions
+        Usage: /help [method]
+        """
         method = getattr(client, function, None)
         if method and method.published:
             print method.__doc__
@@ -264,7 +318,10 @@ class Client(object):
 
     @published
     def exit(self):
-        """usage: /exit : close the client"""
+        """
+        Close the client
+        Usage: /exit
+        """
         exit()
 
 #
@@ -290,7 +347,7 @@ if __name__ == "__main__":
             # If it's not a slash command, just directly call send with the cmd
             client.send(command)
         else:
-            # is a slash command
+            # is a slash command, figure out which command
             action = command.split(' ')
             method = getattr(client, action[0][1:], None)
             # check if it's a valid method
@@ -298,7 +355,7 @@ if __name__ == "__main__":
                 try:
                     method(*action[1:])
                 except TypeError:
-                    # see if they called function correctly (i.e. correct number
+                    # catch if they called function correctly (i.e. correct number
                     # of args)
                     print "<Invalid usage>"
             else:
