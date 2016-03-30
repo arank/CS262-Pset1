@@ -5,6 +5,13 @@ from build.protobufs import request_pb2 as RequestProtoBuf
 from model import User, UserList, Group, GroupList, UserError, GroupMessage, DirectMessage
 from functools import wraps
 
+#
+# This file is the main chat server for the protobuf chat app.
+#
+# The server is a flask app that exposes REST endpoints. All endpoints return
+# HTTP responses that encode Protobuf responses. 
+#
+
 app = Flask(__name__)
 
 #
